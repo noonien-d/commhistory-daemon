@@ -501,17 +501,34 @@ void TextChannelListener::slotOnModelReady(bool status)
 
     // if group exist, read group id right away
     // otherwise add a new group only when a new message(received/sent) comes
-    if (m_GroupModel->rowCount() > 0
-        && m_Account) {
+    const int groupCount = m_GroupModel->rowCount();
+    if (groupCount > 0 && m_Account) {
         const Recipient recipient(m_Account->objectPath(), targetId());
-        for (int row = 0; row < m_GroupModel->rowCount(); row++) {
+        int fallbackRow = -1;
+        int row = 0;
+        for ( ; row < groupCount; row++) {
             const QModelIndex &index = m_GroupModel->index(row, 0);
             const CommHistory::Group &group = m_GroupModel->group(index);
-            if (group.isValid() && group.recipients().containsMatch(recipient)) {
-                m_Group = group;
-
-                DEBUG() << Q_FUNC_INFO << "found existing group:" << m_Group.id();
-                break;
+            if (group.isValid()) {
+                const CommHistory::RecipientList &recipients = group.recipients();
+                if (recipients.count() > 1) {
+                    // This is a multi-member group; prefer to continue searching for an exact match
+                    if (fallbackRow == -1 && recipients.containsMatch(recipient)) {
+                        fallbackRow = row;
+                    }
+                } else if (recipients.containsMatch(recipient)) {
+                    m_Group = group;
+                    DEBUG() << Q_FUNC_INFO << "found existing group:" << m_Group.id();
+                    break;
+                }
+            }
+        }
+        if (row == groupCount) {
+            if (fallbackRow != -1) {
+                m_Group = m_GroupModel->group(m_GroupModel->index(fallbackRow, 0));
+                DEBUG() << Q_FUNC_INFO << "found existing multi-member group:" << m_Group.id();
+            } else {
+                DEBUG() << Q_FUNC_INFO << "no existing group found for targetId:" << targetId();
             }
         }
     }
