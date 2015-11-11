@@ -48,7 +48,6 @@
 #include "notificationmanager.h"
 #include "locstrings.h"
 #include "constants.h"
-#include "commhistoryservice.h"
 #include "debug.h"
 
 using namespace RTComLogger;
@@ -129,8 +128,8 @@ void NotificationManager::init()
     CommHistoryService *service = CommHistoryService::instance();
     connect(service, SIGNAL(inboxObservedChanged(bool,QString)), SLOT(slotInboxObservedChanged()));
     connect(service, SIGNAL(callHistoryObservedChanged(bool)), SLOT(slotCallHistoryObservedChanged(bool)));
-    connect(service, SIGNAL(observedConversationsChanged(QVariantList)),
-                     SLOT(slotObservedConversationsChanged(QVariantList)));
+    connect(service, SIGNAL(observedConversationsChanged(QList<CommHistoryService::Conversation>)),
+                     SLOT(slotObservedConversationsChanged(QList<CommHistoryService::Conversation>)));
 
     groupModel();
 
@@ -328,22 +327,11 @@ bool NotificationManager::isCurrentlyObservedByUI(const CommHistory::Event& even
     else
         remoteMatch = channelTargetId;
 
-    QVariantList conversations = CommHistoryService::instance()->observedConversations();
-    foreach (const QVariant &conversation, conversations) {
-        QVariantList values = conversation.toList();
-        if (values.size() != 3)
-            continue;
+    const Recipient messageRecipient(event.localUid(), remoteMatch);
 
-        if (event.localUid() != values[0].toString())
-            continue;
-
-        if (!CommHistory::remoteAddressMatch(event.localUid(), remoteMatch, values[1].toString()))
-            continue;
-
-        if (chatType != (CommHistory::Group::ChatType)values[2].toUInt())
-            continue;
-
-        return true;
+    foreach (const CommHistoryService::Conversation &conversation, CommHistoryService::instance()->observedConversations()) {
+        if (conversation.first.matches(messageRecipient) && conversation.second == chatType)
+            return true;
     }
 
     return false;
@@ -379,16 +367,13 @@ void NotificationManager::removeNotifications(const QString &accountPath, const 
     }
 }
 
-void NotificationManager::removeConversationNotifications(const QString &localUid,
-                                                          const QString &remoteUid,
+void NotificationManager::removeConversationNotifications(const CommHistory::Recipient &recipient,
                                                           CommHistory::Group::ChatType chatType)
 {
-    const Recipient recipient(localUid, remoteUid);
-
     QHash<EventGroupProperties, NotificationGroup *>::const_iterator it = m_Groups.constBegin(), end = m_Groups.constEnd();
     for ( ; it != end; ++it) {
         NotificationGroup *group(it.value());
-        if (group->localUid() != localUid)
+        if (group->localUid() != recipient.localUid())
             continue;
 
         foreach (PersonalNotification *notification, group->notifications()) {
@@ -409,15 +394,10 @@ void NotificationManager::removeConversationNotifications(const QString &localUi
     }
 }
 
-void NotificationManager::slotObservedConversationsChanged(const QVariantList &conversations)
+void NotificationManager::slotObservedConversationsChanged(const QList<CommHistoryService::Conversation> &conversations)
 {
-    foreach (const QVariant &conversation, conversations) {
-        QVariantList values = conversation.toList();
-        if (values.size() != 3)
-            continue;
-
-        removeConversationNotifications(values[0].toString(), values[1].toString(),
-                                        static_cast<CommHistory::Group::ChatType>(values[2].toUInt()));
+    foreach (const CommHistoryService::Conversation &conversation, conversations) {
+        removeConversationNotifications(conversation.first, static_cast<CommHistory::Group::ChatType>(conversation.second));
     }
 }
 
@@ -712,9 +692,7 @@ void NotificationManager::slotGroupRemoved(const QModelIndex &index, int start, 
         QModelIndex row = m_GroupModel->index(i, 0, index);
         Group group = m_GroupModel->group(row);
         if (group.isValid() && !group.recipients().isEmpty()) {
-            removeConversationNotifications(group.localUid(),
-                                            group.recipients().value(0).remoteUid(),
-                                            group.chatType());
+            removeConversationNotifications(group.recipients().value(0), group.chatType());
         }
     }
 }
