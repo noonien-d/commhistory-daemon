@@ -713,28 +713,28 @@ void NotificationManager::slotGroupDataChanged(const QModelIndex &topLeft, const
         QModelIndex row = m_GroupModel->index(i, 0);
         CommHistory::Group group = m_GroupModel->group(row);
         if (group.isValid()) {
-            const QString remoteUid = group.recipients().value(0).remoteUid();
-            const QString localUid = group.localUid();
+            const Recipient &groupRecipient(group.recipients().value(0));
 
             foreach (NotificationGroup *g, m_Groups) {
-                if (g->localUid() != localUid) {
+                if (g->localUid() != groupRecipient.localUid()) {
                     continue;
                 }
 
                 foreach (PersonalNotification *pn, g->notifications()) {
                     // If notification is for MUC and matches to changed group...
-                    if (!pn->chatName().isEmpty() && pn->account() == localUid &&
-                            CommHistory::remoteAddressMatch(localUid, pn->targetId(), remoteUid))
-                    {
-                        QString newChatName;
-                        if (group.chatName().isEmpty() && pn->chatName() != txt_qtn_msg_group_chat)
-                            newChatName = txt_qtn_msg_group_chat;
-                        else if (group.chatName() != pn->chatName())
-                            newChatName = group.chatName();
+                    if (!pn->chatName().isEmpty()) {
+                        const Recipient notificationRecipient(pn->account(), pn->targetId());
+                        if (notificationRecipient.matches(groupRecipient)) {
+                            QString newChatName;
+                            if (group.chatName().isEmpty() && pn->chatName() != txt_qtn_msg_group_chat)
+                                newChatName = txt_qtn_msg_group_chat;
+                            else if (group.chatName() != pn->chatName())
+                                newChatName = group.chatName();
 
-                        if (!newChatName.isEmpty()) {
-                            DEBUG() << Q_FUNC_INFO << "Changing chat name to" << newChatName;
-                            pn->setChatName(newChatName);
+                            if (!newChatName.isEmpty()) {
+                                DEBUG() << Q_FUNC_INFO << "Changing chat name to" << newChatName;
+                                pn->setChatName(newChatName);
+                            }
                         }
                     }
                 }
