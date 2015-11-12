@@ -23,6 +23,8 @@
 #ifndef COMMHISTORYSERVICE_H
 #define COMMHISTORYSERVICE_H
 
+#include <CommHistory/recipient.h>
+
 #include <QObject>
 #include <QVariantList>
 
@@ -31,6 +33,8 @@ class CommHistoryService : public QObject
     Q_OBJECT
 
 public:
+    typedef QPair<CommHistory::Recipient, int> Conversation;
+
     ~CommHistoryService();
 
     static CommHistoryService *instance();
@@ -39,8 +43,8 @@ public:
 
     bool callHistoryObserved() const { return m_callHistoryObserved; }
     bool inboxObserved() const { return m_inboxObserved; }
-    QString inboxFilterAccount() const { return m_inboxFilterAccount; }
-    QVariantList observedConversations() const { return m_observedConversations; }
+    const QString &inboxFilterAccount() const { return m_inboxFilterAccount; }
+    const QList<Conversation> &observedConversations() const { return m_observedConversations; }
 
 public Q_SLOTS:
     /*! \brief emits signal that authorisation dialog should be shown for contact */
@@ -61,16 +65,18 @@ Q_SIGNALS:
                                  const QString& accountUniqueIdentifier);
     void callHistoryObservedChanged(bool observed);
     void inboxObservedChanged(bool observed, const QString &filterAccount);
-    void observedConversationsChanged(const QVariantList &conversations);
+    void observedConversationsChanged(const QList<Conversation> &conversations);
 
 private:
     bool m_IsRegistered;
     bool m_callHistoryObserved;
     bool m_inboxObserved;
     QString m_inboxFilterAccount;
-    QVariantList m_observedConversations;
+    QList<Conversation> m_observedConversations;
 
     CommHistoryService( QObject* parent = 0 );
 };
+
+Q_DECLARE_METATYPE(CommHistoryService::Conversation);
 
 #endif // COMMHISTORYSERVICE_H

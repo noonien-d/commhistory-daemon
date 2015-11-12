@@ -43,6 +43,7 @@
 #include <CommHistory/ContactResolver>
 
 // our includes
+#include "commhistoryservice.h"
 #include "notificationgroup.h"
 #include "personalnotification.h"
 
@@ -134,7 +135,7 @@ private Q_SLOTS:
      * Initialises notification manager instance
      */
     void init();
-    void slotObservedConversationsChanged(const QVariantList &conversations);
+    void slotObservedConversationsChanged(const QList<CommHistoryService::Conversation> &conversations);
     void slotInboxObservedChanged();
     void slotCallHistoryObservedChanged(bool observed);
     void slotGroupRemoved(const QModelIndex &index, int start, int end);
@@ -159,8 +160,7 @@ private:
     void resolveNotification(PersonalNotification *notification);
     void addNotification(PersonalNotification *notification);
 
-    void removeConversationNotifications(const QString &localId,
-                                         const QString &remoteId,
+    void removeConversationNotifications(const CommHistory::Recipient &recipient,
                                          CommHistory::Group::ChatType chatType);
 
     void syncNotifications();

@@ -95,7 +95,7 @@ void CommHistoryService::setInboxObserved(bool observed, const QString &filterAc
 
 void CommHistoryService::setObservedConversations(const QVariantList &arg)
 {
-    QVariantList conversations;
+    QList<Conversation> conversations;
     foreach (const QVariant &v1, arg) {
         const QDBusArgument arg2 = v1.value<QDBusArgument>();
         arg2.beginArray();
@@ -106,11 +106,17 @@ void CommHistoryService::setObservedConversations(const QVariantList &arg)
             values.append(v2);
         }
         arg2.endArray();
-        conversations << QVariant(values);
+
+        if (values.count() == 3) {
+            const QString localUid(values.at(0).toString());
+            const QString remoteUid(values.at(1).toString());
+            const int chatType(values.at(2).toInt());
+            conversations.append(qMakePair(CommHistory::Recipient(localUid, remoteUid), chatType));
+        }
     }
 
     m_observedConversations = conversations;
-    emit observedConversationsChanged(conversations);
+    emit observedConversationsChanged(m_observedConversations);
 }
 
 bool CommHistoryService::isRegistered()
