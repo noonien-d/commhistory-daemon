@@ -3,7 +3,7 @@ Summary:    Communications event history database daemon
 Version:    0.7.3
 Release:    1
 Group:      Communications/Telephony and IM
-License:    LGPL
+License:    LGPLv2.1
 URL:        https://github.com/nemomobile/commhistory-daemon
 Source0:    %{name}-%{version}.tar.bz2
 BuildRequires:  pkgconfig(Qt5Core)
@@ -40,14 +40,12 @@ Provides: voicecallhistory > 0.1.5
 
 %package tests
 Summary: Unit tests for commhistory-daemon
-Group: Development/Libraries
 
 %description tests
 Unit tests for commhistory-daemon
 
 %package ts-devel
 Summary: Translation source for commhistory-daemon
-Group: System/Applications
 
 %description ts-devel
 Translation source for commhistory-daemon
