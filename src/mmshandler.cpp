@@ -313,7 +313,7 @@ bool MmsHandler::copyMmsPartFiles(const MmsPartList &parts, int eventId, QList<M
 
 QString MmsHandler::copyMessagePartFile(const QString &sourcePath, int eventId, const QString &contentId)
 {
-    QString filePath = messagePartPath(eventId, contentId);
+    QString filePath = messagePartPath(eventId, QFileInfo(sourcePath).fileName());
 
     // First try to create a hard link
     if (link(sourcePath.toLatin1(), filePath.toLatin1()) < 0) {
@@ -326,6 +326,7 @@ QString MmsHandler::copyMessagePartFile(const QString &sourcePath, int eventId, 
         }
     }
 
+    DEBUG_(filePath);
     return filePath;
 }
 
