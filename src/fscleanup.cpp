@@ -46,7 +46,12 @@ FsCleanup::FsCleanup(QObject* aParent) :
 void FsCleanup::onEventDeleted(int aEventId)
 {
     DEBUG_("Event" << aEventId << "deleted");
-    deleteFiles(aEventId);
+    CommHistory::DatabaseIO* io = CommHistory::DatabaseIO::instance();
+    if (!io->eventExists(aEventId)) {
+        deleteFiles(aEventId);
+    } else {
+        qWarning() << "Ignoring stray delete event for" << aEventId;
+    }
 }
 
 void FsCleanup::onGroupsDeleted(QList<int> aGroupIds)
