@@ -45,12 +45,13 @@ FsCleanup::FsCleanup(QObject* aParent) :
 
 void FsCleanup::onEventDeleted(int aEventId)
 {
-    DEBUG_("Event" << aEventId << "deleted");
     CommHistory::DatabaseIO* io = CommHistory::DatabaseIO::instance();
     if (!io->eventExists(aEventId)) {
+        DEBUG_("Event" << aEventId << "deleted");
         deleteFiles(aEventId);
     } else {
-        qWarning() << "Ignoring stray delete event for" << aEventId;
+        // Ignore deleteEvent signals emitted by EventModel::moveEvent
+        DEBUG_("Ignoring delete signal for" << aEventId);
     }
 }
 
