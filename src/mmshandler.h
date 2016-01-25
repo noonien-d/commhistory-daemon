@@ -35,6 +35,7 @@ namespace CommHistory {
 class QDBusPendingCallWatcher;
 class ContextProperty;
 class MGConfItem;
+class MDConfGroup;
 
 class MmsHandler : public MessageHandlerBase
 {
@@ -84,9 +85,7 @@ private:
     ContextProperty *m_roamingAllowedProperty;
     ContextProperty *m_subscriberIdentityProperty;
     QList<int> m_activeEvents;
-    MGConfItem* m_sendMessageFlags;
-    MGConfItem* m_automaticDownload;
-    MGConfItem* m_sendReadReports;
+    MDConfGroup *m_imsiSettings;
 };
 
 #endif // MMSHANDLER_H

@@ -37,7 +37,7 @@
 #include <QDBusPendingCall>
 #include <QDBusPendingCallWatcher>
 #include <contextproperty.h>
-#include <mgconfitem.h>
+#include <mdconfgroup.h>
 #include <unistd.h>
 
 using namespace RTComLogger;
@@ -50,9 +50,7 @@ MmsHandler::MmsHandler(QObject* parent)
     , m_cellularStatusProperty(new ContextProperty("Cellular.Status", this))
     , m_roamingAllowedProperty(new ContextProperty("Cellular.DataRoamingAllowed", this))
     , m_subscriberIdentityProperty(new ContextProperty("Cellular.SubscriberIdentity", this))
-    , m_sendMessageFlags(NULL)
-    , m_automaticDownload(NULL)
-    , m_sendReadReports(NULL)
+    , m_imsiSettings(new MDConfGroup(QStringLiteral("/imsi"), this))
 {
     qDBusRegisterMetaType<MmsPart>();
     qDBusRegisterMetaType<MmsPartList>();
@@ -99,9 +97,8 @@ QString MmsHandler::messageNotification(const QString &imsi, const QString &from
     event.setExtraProperty(MMS_PROPERTY_PUSH_DATA, data.toBase64());
 
     // The default action is to download MMS automatically
-    const bool manualDownload = (!isDataProhibited() && m_automaticDownload) ?
-        !m_automaticDownload->value(true).toBool() :
-        true;
+    const bool manualDownload = !isDataProhibited()
+                && m_imsiSettings->value(imsi + QStringLiteral("/mms/automatic-download"), true).toBool();
 
     DEBUG_("manualDownload is" << manualDownload);
     event.setStatus(manualDownload ? Event::ManualNotificationStatus : Event::WaitingStatus);
@@ -620,7 +617,9 @@ void MmsHandler::sendMessageFromEvent(Event &event)
         parts.append(p);
     }
 
-    unsigned int flags = m_sendMessageFlags ? m_sendMessageFlags->value().toInt() : 0;
+    const QString imsi = event.extraProperty(MMS_PROPERTY_IMSI).toString();
+
+    unsigned int flags = m_imsiSettings->value(imsi + QStringLiteral("/mms/send-flags"), 0).toInt();
     DEBUG_("send flag are" << flags);
 
     QVariantList args;
@@ -696,27 +695,16 @@ void MmsHandler::onSubscriberIdentityChanged()
 {
     QString imsi = m_subscriberIdentityProperty->value().toString();
     DEBUG_("SubscriberIdentity =" << m_subscriberIdentityProperty->value() << imsi);
-    delete m_sendMessageFlags;
-    delete m_automaticDownload;
-    delete m_sendReadReports;
-    if (imsi.isEmpty()) {
-        m_sendMessageFlags = NULL;
-        m_automaticDownload = NULL;
-        m_sendReadReports = NULL;
-    } else {
-        QString dir("/imsi/" + imsi + "/mms/");
-        m_sendMessageFlags = new MGConfItem(dir + "send-flags", this);
-        m_automaticDownload = new MGConfItem(dir + "automatic-download", this);
-        m_sendReadReports = new MGConfItem(dir + "send-read-reports", this);
-    }
 }
 
 void MmsHandler::eventMarkedAsRead(CommHistory::Event &event)
 {
+    const QString imsi = event.extraProperty(MMS_PROPERTY_IMSI).toString();
+
     // Caller already checked canSendReadReports() so mobile data is allowed
-    const bool sendReadReports = (m_sendReadReports &&
-        m_sendReadReports->value(false).toBool());
-    QString imsi = event.extraProperty(MMS_PROPERTY_IMSI).toString();
+    const bool sendReadReports = m_imsiSettings->value(
+                imsi + QStringLiteral("/mms/send-read-reports"), false).toBool();
+
     if (sendReadReports) {
         DEBUG_("sending read report for" << event.id());
         QVariantList args;
