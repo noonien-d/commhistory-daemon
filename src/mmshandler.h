@@ -37,6 +37,7 @@ class QOfonoSimManager;
 class QOfonoNetworkRegistration;
 class QOfonoConnectionManager;
 class QOfonoSimWatcher;
+class QOfonoExtModemManager;
 class MGConfItem;
 class MDConfGroup;
 
@@ -72,6 +73,7 @@ private Q_SLOTS:
     void onStatusChanged(const QString &status);
     void onRoamingAllowedChanged(bool roaming);
     void onSubscriberIdentityChanged(const QString &imsi);
+    void onDefaultVoiceModemChanged(QString modem);
 
 private:
     QString getModemPath(const QString &imsi) const;
@@ -93,11 +95,13 @@ private:
     QOfonoNetworkRegistration *m_ofonoNetworkRegistration;
     QOfonoConnectionManager *m_ofonoConnectionManager;
     QOfonoSimWatcher *m_ofonoSimWatcher;
+    QOfonoExtModemManager *m_ofonoExtModemManager;
     MDConfGroup *m_imsiSettings;
     QString m_cellularStatus;
     bool m_roamingAllowed;
     QString m_imsi;
     QList<int> m_activeEvents;
+    QString m_defaultVoiceModem;
 };
 
 #endif // MMSHANDLER_H

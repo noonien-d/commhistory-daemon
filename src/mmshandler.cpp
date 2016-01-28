@@ -41,6 +41,7 @@
 #include <qofononetworkregistration.h>
 #include <qofonoconnectionmanager.h>
 #include <qofonosimwatcher.h>
+#include <qofonoextmodemmanager.h>
 #include <unistd.h>
 
 using namespace RTComLogger;
@@ -54,11 +55,15 @@ MmsHandler::MmsHandler(QObject* parent)
     , m_ofonoNetworkRegistration(new QOfonoNetworkRegistration(this))
     , m_ofonoConnectionManager(new QOfonoConnectionManager(this))
     , m_ofonoSimWatcher(new QOfonoSimWatcher(this))
+    , m_ofonoExtModemManager(new QOfonoExtModemManager(this))
     , m_imsiSettings(new MDConfGroup(QStringLiteral("/imsi"), this))
 {
     qDBusRegisterMetaType<MmsPart>();
     qDBusRegisterMetaType<MmsPartList>();
     qDBusRegisterMetaType<QList<CommHistory::Event> >();
+
+    connect(m_ofonoExtModemManager, SIGNAL(defaultVoiceModemChanged(QString)),
+                                    SLOT(onDefaultVoiceModemChanged(QString)));
 
     onSubscriberIdentityChanged(m_ofonoSimManager->subscriberIdentity());
     connect(m_ofonoSimManager, SIGNAL(subscriberIdentityChanged(const QString &)),
@@ -540,16 +545,17 @@ int MmsHandler::sendMessage(const QStringList &to, const QStringList &cc, const 
         const QString &subject, MmsPartList parts)
 {
     Event event;
+    QString ringAccountPath = accountPath(m_defaultVoiceModem);
     event.setType(Event::MMSEvent);
     event.setStartTime(QDateTime::currentDateTime());
     event.setEndTime(event.startTime());
     event.setDirection(Event::Outbound);
-    event.setLocalUid(RING_ACCOUNT_PATH);
+    event.setLocalUid(ringAccountPath);
     event.setSubject(subject);
     event.setStatus(Event::SendingStatus);
     event.setIsRead(true);
 
-    event.setRecipients(Recipient(RING_ACCOUNT_PATH, CommHistory::normalizePhoneNumber(to[0], false))); // XXX Wrong for group conversations!
+    event.setRecipients(Recipient(ringAccountPath, CommHistory::normalizePhoneNumber(to[0], false))); // XXX Wrong for group conversations!
     event.setToList(normalizeNumberList(to));
     event.setCcList(normalizeNumberList(cc));
     event.setBccList(normalizeNumberList(bcc));
@@ -738,6 +744,19 @@ void MmsHandler::onSubscriberIdentityChanged(const QString &imsi)
 {
     DEBUG_("imsi changed " << imsi);
     m_imsi = imsi;
+}
+
+void MmsHandler::onDefaultVoiceModemChanged(QString modem)
+{
+    DEBUG_("onDefaultVoiceModemChanged" << modem);
+
+    if (modem != m_defaultVoiceModem) {
+        DEBUG_("updating modem path for qofono objects");
+        m_defaultVoiceModem = modem;
+        m_ofonoSimManager->setModemPath(m_defaultVoiceModem);
+        m_ofonoNetworkRegistration->setModemPath(m_defaultVoiceModem);
+        m_ofonoConnectionManager->setModemPath(m_defaultVoiceModem);
+    }
 }
 
 void MmsHandler::eventMarkedAsRead(CommHistory::Event &event)
