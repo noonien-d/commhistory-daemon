@@ -36,8 +36,11 @@
 #include <QDBusMessage>
 #include <QDBusPendingCall>
 #include <QDBusPendingCallWatcher>
-#include <contextproperty.h>
 #include <mdconfgroup.h>
+#include <qofonosimmanager.h>
+#include <qofononetworkregistration.h>
+#include <qofonoconnectionmanager.h>
+#include <qofonosimwatcher.h>
 #include <unistd.h>
 
 using namespace RTComLogger;
@@ -47,19 +50,27 @@ using namespace CommHistory;
 
 MmsHandler::MmsHandler(QObject* parent)
     : MessageHandlerBase(parent, MMS_HANDLER_PATH, MMS_HANDLER_SERVICE)
-    , m_cellularStatusProperty(new ContextProperty("Cellular.Status", this))
-    , m_roamingAllowedProperty(new ContextProperty("Cellular.DataRoamingAllowed", this))
-    , m_subscriberIdentityProperty(new ContextProperty("Cellular.SubscriberIdentity", this))
+    , m_ofonoSimManager(new QOfonoSimManager(this))
+    , m_ofonoNetworkRegistration(new QOfonoNetworkRegistration(this))
+    , m_ofonoConnectionManager(new QOfonoConnectionManager(this))
+    , m_ofonoSimWatcher(new QOfonoSimWatcher(this))
     , m_imsiSettings(new MDConfGroup(QStringLiteral("/imsi"), this))
 {
     qDBusRegisterMetaType<MmsPart>();
     qDBusRegisterMetaType<MmsPartList>();
     qDBusRegisterMetaType<QList<CommHistory::Event> >();
 
-    connect(m_cellularStatusProperty, SIGNAL(valueChanged()), SLOT(onDataProhibitedChanged()));
-    connect(m_roamingAllowedProperty, SIGNAL(valueChanged()), SLOT(onDataProhibitedChanged()));
-    connect(m_subscriberIdentityProperty, SIGNAL(valueChanged()), SLOT(onSubscriberIdentityChanged()));
-    onSubscriberIdentityChanged();
+    onSubscriberIdentityChanged(m_ofonoSimManager->subscriberIdentity());
+    connect(m_ofonoSimManager, SIGNAL(subscriberIdentityChanged(const QString &)),
+                               SLOT(onSubscriberIdentityChanged(const QString &)));
+
+    onStatusChanged(m_ofonoNetworkRegistration->status());
+    connect(m_ofonoNetworkRegistration, SIGNAL(statusChanged(const QString &)),
+                                        SLOT(onStatusChanged(const QString &)));
+
+    onRoamingAllowedChanged(m_ofonoConnectionManager->roamingAllowed());
+    connect(m_ofonoConnectionManager, SIGNAL(roamingAllowedChanged(bool)),
+                                      SLOT(onRoamingAllowedChanged(bool)));
 
     QDBusConnection dbus(QDBusConnection::sessionBus());
     if (!dbus.connect(QString(), COMM_HISTORY_OBJECT_PATH, COMM_HISTORY_INTERFACE,
@@ -80,16 +91,37 @@ QDBusPendingCall MmsHandler::callEngine(const QString &method, const QVariantLis
     return MMS_ENGINE_BUS.asyncCall(call);
 }
 
+QString MmsHandler::getModemPath(const QString &imsi) const
+{
+    QString path;
+
+    QList<QOfonoSimManager::SharedPointer> sims = m_ofonoSimWatcher->presentSimList();
+    const int n = sims.count();
+    for (int i = 0; i < n; i++) {
+        if (sims.at(i)->subscriberIdentity() == imsi) {
+            path = sims.at(i)->modemPath();
+            break;
+        }
+    }
+
+    return path;
+}
+
 QString MmsHandler::messageNotification(const QString &imsi, const QString &from,
         const QString &subject, uint expiry, const QByteArray &data)
 {
+    QString modemPath = getModemPath(imsi);
+    QString ringAccountPath = accountPath(modemPath);
+    DEBUG_("got MMS message with imsi" << imsi
+           << "modem path" << modemPath
+           << "account path" << ringAccountPath);
     Event event;
     event.setType(Event::MMSEvent);
     event.setStartTime(QDateTime::currentDateTime());
     event.setEndTime(event.startTime());
     event.setDirection(Event::Inbound);
-    event.setLocalUid(RING_ACCOUNT_PATH);
-    event.setRecipients(Recipient(RING_ACCOUNT_PATH, from));
+    event.setLocalUid(ringAccountPath);
+    event.setRecipients(Recipient(ringAccountPath, from));
     event.setSubject(subject);
     event.setSubscriberIdentity(imsi);
     event.setExtraProperty(MMS_PROPERTY_IMSI, imsi);
@@ -224,7 +256,7 @@ void MmsHandler::messageReceived(const QString &recId, const QString &mmsId, con
     // Change UID/group if necessary
     if (event.recipients().value(0).remoteUid() != from) {
         int oldGroup = event.groupId();
-        event.setRecipients(Recipient(RING_ACCOUNT_PATH, from));
+        event.setRecipients(Recipient(event.localUid(), from));
         if (!setGroupForEvent(event))
             qCritical() << "Failed handling group for MMS received event";
 
@@ -660,9 +692,9 @@ void MmsHandler::onSendMessageFinished(QDBusPendingCallWatcher *call)
 
 bool MmsHandler::isDataProhibited()
 {
-    if (m_cellularStatusProperty->value().toString() != "roaming")
+    if (m_cellularStatus != "roaming")
         return false;
-    if (!m_roamingAllowedProperty->value().toBool())
+    if (!m_roamingAllowed)
         return true;
 
     // TODO: This property should be monitored asynchronously to avoid blocking dbus queries
@@ -675,11 +707,10 @@ bool MmsHandler::isDataProhibited()
 
 bool MmsHandler::canSendReadReports()
 {
-    QString imsi = m_subscriberIdentityProperty->value().toString();
-    return !imsi.isEmpty() && !isDataProhibited();
+    return !m_imsi.isEmpty() && !isDataProhibited();
 }
 
-void MmsHandler::onDataProhibitedChanged()
+void MmsHandler::dataProhibitedChanged()
 {
     if (!m_activeEvents.isEmpty() && isDataProhibited()) {
         qWarning() << "Cancelling" << m_activeEvents.size() << "active MMS events due to roaming restrictions";
@@ -691,10 +722,22 @@ void MmsHandler::onDataProhibitedChanged()
     }
 }
 
-void MmsHandler::onSubscriberIdentityChanged()
+void MmsHandler::onStatusChanged(const QString &status)
 {
-    QString imsi = m_subscriberIdentityProperty->value().toString();
-    DEBUG_("SubscriberIdentity =" << m_subscriberIdentityProperty->value() << imsi);
+    m_cellularStatus = status;
+    dataProhibitedChanged();
+}
+
+void MmsHandler::onRoamingAllowedChanged(bool roaming)
+{
+    m_roamingAllowed = roaming;
+    dataProhibitedChanged();
+}
+
+void MmsHandler::onSubscriberIdentityChanged(const QString &imsi)
+{
+    DEBUG_("imsi changed " << imsi);
+    m_imsi = imsi;
 }
 
 void MmsHandler::eventMarkedAsRead(CommHistory::Event &event)
@@ -760,4 +803,9 @@ void MmsHandler::onGroupsUpdatedFull(const QList<CommHistory::Group> &groups)
             }
         }
     }
+}
+
+QString MmsHandler::accountPath(const QString &modemPath)
+{
+    return RING_ACCOUNT_PATH_PREFIX + modemPath;
 }

@@ -33,7 +33,10 @@ namespace CommHistory {
 }
 
 class QDBusPendingCallWatcher;
-class ContextProperty;
+class QOfonoSimManager;
+class QOfonoNetworkRegistration;
+class QOfonoConnectionManager;
+class QOfonoSimWatcher;
 class MGConfItem;
 class MDConfGroup;
 
@@ -64,12 +67,15 @@ public Q_SLOTS:
 
 private Q_SLOTS:
     void onSendMessageFinished(QDBusPendingCallWatcher *call);
-    void onDataProhibitedChanged();
-    void onSubscriberIdentityChanged();
     void onEventsUpdated(const QList<CommHistory::Event> &events);
     void onGroupsUpdatedFull(const QList<CommHistory::Group> &groups);
+    void onStatusChanged(const QString &status);
+    void onRoamingAllowedChanged(bool roaming);
+    void onSubscriberIdentityChanged(const QString &imsi);
 
 private:
+    QString getModemPath(const QString &imsi) const;
+    void dataProhibitedChanged();
     static QDBusPendingCall callEngine(const QString &method, const QVariantList &args);
     void eventMarkedAsRead(CommHistory::Event &event);
 
@@ -80,12 +86,18 @@ private:
     bool isDataProhibited();
     bool canSendReadReports();
 
+    QString accountPath(const QString &modemPath);
+
 private:
-    ContextProperty *m_cellularStatusProperty;
-    ContextProperty *m_roamingAllowedProperty;
-    ContextProperty *m_subscriberIdentityProperty;
-    QList<int> m_activeEvents;
+    QOfonoSimManager *m_ofonoSimManager;
+    QOfonoNetworkRegistration *m_ofonoNetworkRegistration;
+    QOfonoConnectionManager *m_ofonoConnectionManager;
+    QOfonoSimWatcher *m_ofonoSimWatcher;
     MDConfGroup *m_imsiSettings;
+    QString m_cellularStatus;
+    bool m_roamingAllowed;
+    QString m_imsi;
+    QList<int> m_activeEvents;
 };
 
 #endif // MMSHANDLER_H

@@ -65,6 +65,7 @@ namespace RTComLogger {
 #define CONTACT_ID_HINT     QLatin1String("x-org-nemomobile-qmlmessages.contact.id")
 
 #define RING_ACCOUNT_PATH QLatin1String("/org/freedesktop/Telepathy/Account/ring/tel/account0")
+#define RING_ACCOUNT_PATH_PREFIX QLatin1String("/org/freedesktop/Telepathy/Account/ring/tel")
 
 #define CONTACT_SEPARATOR_IN_NOTIFICATION_GROUP QLatin1String(", ")
 
