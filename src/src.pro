@@ -35,7 +35,7 @@ QT += dbus contacts versit
 
 PKGCONFIG += ngf-qt5 mce nemonotifications-qt5 contextkit-statefs
 PKGCONFIG += TelepathyQt5 commhistory-qt5 mlite5 mlocale5
-PKGCONFIG += qofono-qt5 contactcache-qt5 qtcontacts-sqlite-qt5-extensions
+PKGCONFIG += qofono-qt5 qofonoext contactcache-qt5 qtcontacts-sqlite-qt5-extensions
 # clock_gettime
 LIBS += -lrt
 
