@@ -21,7 +21,6 @@ BuildRequires:  pkgconfig(mce)
 BuildRequires:  pkgconfig(ngf-qt5)
 BuildRequires:  pkgconfig(qt5-boostable)
 BuildRequires:  pkgconfig(nemonotifications-qt5) >= 1.0.5
-BuildRequires:  pkgconfig(contextkit-statefs)
 BuildRequires:  qt5-qttools
 BuildRequires:  qt5-qttools-linguist
 BuildRequires:  libqofono-qt5-devel >= 0.89
