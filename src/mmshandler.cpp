@@ -229,12 +229,15 @@ void MmsHandler::messageReceived(const QString &recId, const QString &mmsId, con
     m_activeEvents.removeOne(recId.toInt());
 
     if (!event.isValid()) {
+        qWarning() << "Received messageReceived with unknown recId. Setting localUid to currently active account path.";
         // Create new event
+        QString modemPath = getModemPath(m_imsi);
+        QString ringAccountPath = accountPath(modemPath);
         event.setType(Event::MMSEvent);
         event.setEndTime(QDateTime::currentDateTime());
         event.setDirection(Event::Inbound);
-        event.setLocalUid(RING_ACCOUNT_PATH);
-        event.setRecipients(Recipient(RING_ACCOUNT_PATH, from));
+        event.setLocalUid(ringAccountPath);
+        event.setRecipients(Recipient(ringAccountPath, from));
         if (!setGroupForEvent(event)) {
             qCritical() << "Failed to handle group for MMS received event; message dropped:" << event.toString();
             return;
