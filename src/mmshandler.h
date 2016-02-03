@@ -23,6 +23,7 @@
 #ifndef MMSHANDLER_H
 #define MMSHANDLER_H
 
+#include <QHash>
 #include "messagehandlerbase.h"
 #include "mmspart.h"
 
@@ -33,13 +34,11 @@ namespace CommHistory {
 }
 
 class QDBusPendingCallWatcher;
-class QOfonoSimManager;
-class QOfonoNetworkRegistration;
-class QOfonoConnectionManager;
-class QOfonoSimWatcher;
+class QOfonoManager;
 class QOfonoExtModemManager;
 class MGConfItem;
 class MDConfGroup;
+class MmsHandlerModem;
 
 class MmsHandler : public MessageHandlerBase
 {
@@ -67,17 +66,21 @@ public Q_SLOTS:
     void sendMessageFromEvent(int eventId);
 
 private Q_SLOTS:
+    void onOfonoAvailableChanged(bool available);
+    void onModemAdded(QString path);
+    void onModemRemoved(QString path);
     void onSendMessageFinished(QDBusPendingCallWatcher *call);
     void onEventsUpdated(const QList<CommHistory::Event> &events);
     void onGroupsUpdatedFull(const QList<CommHistory::Group> &groups);
     void onStatusChanged(const QString &status);
     void onRoamingAllowedChanged(bool roaming);
-    void onSubscriberIdentityChanged(const QString &imsi);
     void onDefaultVoiceModemChanged(QString modem);
 
 private:
+    void addAllModems();
+    void addModem(const QString &path);
     QString getModemPath(const QString &imsi) const;
-    void dataProhibitedChanged();
+    void dataProhibitedChanged(const QString &path);
     static QDBusPendingCall callEngine(const QString &method, const QVariantList &args);
     void eventMarkedAsRead(CommHistory::Event &event);
 
@@ -85,21 +88,16 @@ private:
     bool copyMmsPartFiles(const MmsPartList &parts, int eventId, QList<CommHistory::MessagePart> &eventParts, QString &freeText);
     QString copyMessagePartFile(const QString &sourcePath, int eventId, const QString &contentId);
 
-    bool isDataProhibited();
-    bool canSendReadReports();
+    bool isDataProhibited(const QString &path);
+    bool canSendReadReports(const QString &path);
 
     QString accountPath(const QString &modemPath);
 
 private:
-    QOfonoSimManager *m_ofonoSimManager;
-    QOfonoNetworkRegistration *m_ofonoNetworkRegistration;
-    QOfonoConnectionManager *m_ofonoConnectionManager;
-    QOfonoSimWatcher *m_ofonoSimWatcher;
+    QOfonoManager *m_ofonoManager;
     QOfonoExtModemManager *m_ofonoExtModemManager;
+    QHash<QString, MmsHandlerModem*> m_modems;
     MDConfGroup *m_imsiSettings;
-    QString m_cellularStatus;
-    bool m_roamingAllowed;
-    QString m_imsi;
     QList<int> m_activeEvents;
     QString m_defaultVoiceModem;
 };
