@@ -107,11 +107,6 @@ mmshandler.files = org.nemomobile.MmsHandler.xml
 mmshandler.header_flags = -i mmspart.h -i mmshandler.h -l MmsHandler
 mmshandler.source_flags = -l MmsHandler
 
-DBUS_ADAPTORS += smartmessaging
-smartmessaging.files = org.ofono.SmartMessaging.xml
-smartmessaging.header_flags = -i smartmessaging.h -l SmartMessaging
-smartmessaging.source_flags = -l SmartMessaging
-
 # -----------------------------------------------------------------------------
 # Telepathy extensions.
 # -----------------------------------------------------------------------------
