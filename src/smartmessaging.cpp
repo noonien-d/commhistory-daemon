@@ -23,8 +23,6 @@
 #include "notificationmanager.h"
 #include "constants.h"
 
-#include "qofonomanager.h"
-
 #include <CommHistory/event.h>
 #include <CommHistory/messagepart.h>
 
@@ -42,30 +40,85 @@ using namespace RTComLogger;
 SmartMessaging::SmartMessaging(QObject* parent) :
     MessageHandlerBase(parent, AGENT_PATH, AGENT_SERVICE)
 {
-    QOfonoManager* ofono = new QOfonoManager(this);
+    ofono = new QOfonoManager(this);
     connect(ofono, SIGNAL(modemAdded(QString)), this, SLOT(onModemAdded(QString)));
     connect(ofono, SIGNAL(modemRemoved(QString)), this, SLOT(onModemRemoved(QString)));
-    QStringList modems = ofono->modems();
     DEBUG_("created");
+
+    if (ofono->available()) {
+        addAllModems();
+    }
+    connect(ofono, SIGNAL(availableChanged(bool)),
+            this, SLOT(onOfonoAvailableChanged(bool)));
+}
+
+SmartMessaging::~SmartMessaging()
+{
+    onOfonoAvailableChanged(false);
+}
+
+void SmartMessaging::onOfonoAvailableChanged(bool available)
+{
+    DEBUG_("ofono available changed to" << available);
+    if (available) {
+        addAllModems();
+    } else {
+        qDeleteAll(interfaces.values());
+        qDeleteAll(agents.values());
+        agentToModemPaths.clear();
+    }
+}
+
+void SmartMessaging::setup(const QString &path)
+{
+    if (path.isEmpty()) {
+        qWarning() << "Empty modem path.";
+        return;
+    }
+
+    QOfonoSmartMessagingAgent *agent = 0;
+    QOfonoSmartMessaging *sm = 0;
+    QString agentPath = agentPathFromModem(path);
+
+    sm = interfaces[path];
+    agent = agents[agentPath];
+
+    DEBUG_("setup: registering agent" << agentPath << "for" << path);
+    sm->registerAgent(agentPath);
+    agent->setAgentPath(agentPath);
+    connect(agent, SIGNAL(receiveBusinessCard(const QByteArray&, const QVariantMap&)),
+            this, SLOT(onReceiveBusinessCard(const QByteArray&, const QVariantMap&)));
+    connect(agent, SIGNAL(receiveAppointment(const QByteArray&, const QVariantMap&)),
+            this, SLOT(onReceiveAppointment(const QByteArray&, const QVariantMap&)));
+    connect(agent, SIGNAL(release()),
+            this, SLOT(onRelease()));
+}
+
+void SmartMessaging::addAllModems()
+{
+    QStringList modems = ofono->modems();
     foreach (QString path, modems) {
         DEBUG_("modem" << path);
         addModem(path);
     }
 }
 
-SmartMessaging::~SmartMessaging()
-{
-    qDeleteAll(interfaces.values());
-}
-
 void SmartMessaging::addModem(QString path)
 {
+    if (interfaces.contains(path))
+        return;
+
     QOfonoSmartMessaging* sm = new QOfonoSmartMessaging(this);
+    QString agentPath = agentPathFromModem(path);
     sm->setModemPath(path);
     interfaces.insert(path, sm);
+    QOfonoSmartMessagingAgent *agent = new QOfonoSmartMessagingAgent(this);
+    agents.insert(agentPath, agent);
+
+    agentToModemPaths.insert(agentPath, path);
+
     if (sm->isValid()) {
-        DEBUG_("registering agent for" << sm->modemPath());
-        sm->registerAgent(AGENT_PATH);
+        setup(path);
     }
     connect(sm, SIGNAL(validChanged(bool)), this, SLOT(onValidChanged(bool)));
 }
@@ -80,41 +133,58 @@ void SmartMessaging::onModemAdded(QString path)
 void SmartMessaging::onModemRemoved(QString path)
 {
     DEBUG_("onModemRemoved" << path);
+    QString agentPath = agentPathFromModem(path);
+    agentToModemPaths.remove(agentPath);
     delete interfaces.take(path);
+    delete agents.take(agentPath);
+}
+
+QString SmartMessaging::agentPathFromModem(const QString &modemPath)
+{
+    return AGENT_PATH + modemPath;
+}
+
+QString SmartMessaging::accountPath(const QString &modemPath)
+{
+    return RING_ACCOUNT_PATH_PREFIX + modemPath;
 }
 
 void SmartMessaging::onValidChanged(bool valid)
 {
     QOfonoSmartMessaging* sm = (QOfonoSmartMessaging*)sender();
     if (valid) {
-        DEBUG_("registering agent for" << sm->modemPath());
-        sm->registerAgent(AGENT_PATH);
+        setup(sm->modemPath());
     } else {
         DEBUG_("no agent for " << sm->modemPath());
     }
 }
 
-void SmartMessaging::ReceiveAppointment(QByteArray, QVariantHash)
+void SmartMessaging::onReceiveAppointment(const QByteArray &vcard, const QVariantMap &info)
 {
     DEBUG_("ReceiveAppointment");
 }
 
-void SmartMessaging::ReceiveBusinessCard(QByteArray vcard, QVariantHash info)
+void SmartMessaging::onReceiveBusinessCard(const QByteArray &vcard, const QVariantMap &info)
 {
+    QOfonoSmartMessagingAgent* agent = (QOfonoSmartMessagingAgent*) sender();
+
     QString from = info.value("Sender").toString();
-    DEBUG_("ReceiveBusinessCard" << vcard.length() << "bytes from" << from);
+    DEBUG_("onReceiveBusinessCard to" << agent->agentPath() << ":" << vcard.length() << "bytes from" << from);
     if (vcard.isEmpty()) {
         qWarning() << "Empty vcard";
         return;
     }
+
+    QString path = agentToModemPaths.value(agent->agentPath());
+    QString ringAccountPath = accountPath(path);
 
     Event event;
     event.setType(Event::SMSEvent);
     event.setStartTime(QDateTime::currentDateTime());
     event.setEndTime(event.startTime());
     event.setDirection(Event::Inbound);
-    event.setLocalUid(RING_ACCOUNT_PATH);
-    event.setRecipients(Recipient(RING_ACCOUNT_PATH, from));
+    event.setLocalUid(ringAccountPath);
+    event.setRecipients(Recipient(ringAccountPath, from));
     event.setStatus(Event::DownloadingStatus);
     if (!setGroupForEvent(event)) {
         qCritical() << "Failed to handle group for vCard notification event; message dropped:" << event.toString();
@@ -144,7 +214,7 @@ void SmartMessaging::ReceiveBusinessCard(QByteArray vcard, QVariantHash info)
     NotificationManager::instance()->showNotification(event, from, Group::ChatTypeP2P);
 }
 
-void SmartMessaging::Release()
+void SmartMessaging::onRelease()
 {
     DEBUG_("Release");
 }
