@@ -36,7 +36,6 @@ namespace CommHistory {
 class QDBusPendingCallWatcher;
 class QOfonoManager;
 class QOfonoExtModemManager;
-class MGConfItem;
 class MDConfGroup;
 class MmsHandlerModem;
 
