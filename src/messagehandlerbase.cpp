@@ -73,14 +73,14 @@ bool MessageHandlerBase::setGroupForEvent(Event& event)
 {
     if (!groupManager) {
         groupManager = new GroupManager(this);
-        if (!groupManager->getGroups(RING_ACCOUNT_PATH)) {
+        if (!groupManager->getGroups()) {
             delete groupManager;
             groupManager = NULL;
             return false;
         }
     }
 
-    GroupObject* group = groupManager->findGroup(RING_ACCOUNT_PATH, event.recipients().value(0).remoteUid());
+    GroupObject* group = groupManager->findGroup(event.localUid(), event.recipients().value(0).remoteUid());
     if (group) {
         event.setGroupId(group->id());
         return true;
@@ -88,8 +88,8 @@ bool MessageHandlerBase::setGroupForEvent(Event& event)
 
     DEBUG() << "Creating new group for event" << event.recipients().value(0).remoteUid();
     Group newGroup;
-    newGroup.setLocalUid(RING_ACCOUNT_PATH);
-    newGroup.setRecipients(Recipient(RING_ACCOUNT_PATH, event.recipients().value(0).remoteUid()));
+    newGroup.setLocalUid(event.localUid());
+    newGroup.setRecipients(Recipient(event.localUid(), event.recipients().value(0).remoteUid()));
     if (!groupManager->addGroup(newGroup)) {
         qCritical() << "Failed adding new group for event" << newGroup.toString();
         return false;

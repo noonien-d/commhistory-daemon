@@ -23,6 +23,8 @@
 #ifndef MMSHANDLER_H
 #define MMSHANDLER_H
 
+#include <QHash>
+#include <QMultiMap>
 #include "messagehandlerbase.h"
 #include "mmspart.h"
 
@@ -33,8 +35,10 @@ namespace CommHistory {
 }
 
 class QDBusPendingCallWatcher;
-class ContextProperty;
-class MGConfItem;
+class QOfonoManager;
+class QOfonoExtModemManager;
+class MDConfGroup;
+class MmsHandlerModem;
 
 class MmsHandler : public MessageHandlerBase
 {
@@ -62,13 +66,21 @@ public Q_SLOTS:
     void sendMessageFromEvent(int eventId);
 
 private Q_SLOTS:
+    void onOfonoAvailableChanged(bool available);
+    void onModemAdded(QString path);
+    void onModemRemoved(QString path);
     void onSendMessageFinished(QDBusPendingCallWatcher *call);
-    void onDataProhibitedChanged();
-    void onSubscriberIdentityChanged();
     void onEventsUpdated(const QList<CommHistory::Event> &events);
     void onGroupsUpdatedFull(const QList<CommHistory::Group> &groups);
+    void onStatusChanged(const QString &status);
+    void onRoamingAllowedChanged(bool roaming);
+    void onDefaultVoiceModemChanged(QString modem);
 
 private:
+    void addAllModems();
+    void addModem(const QString &path);
+    QString getModemPath(const QString &imsi) const;
+    void dataProhibitedChanged(const QString &path);
     static QDBusPendingCall callEngine(const QString &method, const QVariantList &args);
     void eventMarkedAsRead(CommHistory::Event &event);
 
@@ -76,17 +88,18 @@ private:
     bool copyMmsPartFiles(const MmsPartList &parts, int eventId, QList<CommHistory::MessagePart> &eventParts, QString &freeText);
     QString copyMessagePartFile(const QString &sourcePath, int eventId, const QString &contentId);
 
-    bool isDataProhibited();
-    bool canSendReadReports();
+    bool isDataProhibited(const QString &path);
+    bool canSendReadReports(const QString &path);
+
+    QString accountPath(const QString &modemPath);
 
 private:
-    ContextProperty *m_cellularStatusProperty;
-    ContextProperty *m_roamingAllowedProperty;
-    ContextProperty *m_subscriberIdentityProperty;
-    QList<int> m_activeEvents;
-    MGConfItem* m_sendMessageFlags;
-    MGConfItem* m_automaticDownload;
-    MGConfItem* m_sendReadReports;
+    QOfonoManager *m_ofonoManager;
+    QOfonoExtModemManager *m_ofonoExtModemManager;
+    QHash<QString, MmsHandlerModem*> m_modems;
+    MDConfGroup *m_imsiSettings;
+    QMultiMap<QString, int> m_activeEvents;
+    QString m_defaultVoiceModem;
 };
 
 #endif // MMSHANDLER_H

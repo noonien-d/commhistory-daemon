@@ -33,9 +33,9 @@ TARGET = commhistoryd
 # -----------------------------------------------------------------------------
 QT += dbus contacts versit
 
-PKGCONFIG += ngf-qt5 mce nemonotifications-qt5 contextkit-statefs
+PKGCONFIG += ngf-qt5 mce nemonotifications-qt5
 PKGCONFIG += TelepathyQt5 commhistory-qt5 mlite5 mlocale5
-PKGCONFIG += qofono-qt5 contactcache-qt5 qtcontacts-sqlite-qt5-extensions
+PKGCONFIG += qofono-qt5 qofonoext contactcache-qt5 qtcontacts-sqlite-qt5-extensions
 # clock_gettime
 LIBS += -lrt
 
@@ -106,11 +106,6 @@ DBUS_ADAPTORS += mmshandler
 mmshandler.files = org.nemomobile.MmsHandler.xml
 mmshandler.header_flags = -i mmspart.h -i mmshandler.h -l MmsHandler
 mmshandler.source_flags = -l MmsHandler
-
-DBUS_ADAPTORS += smartmessaging
-smartmessaging.files = org.ofono.SmartMessaging.xml
-smartmessaging.header_flags = -i smartmessaging.h -l SmartMessaging
-smartmessaging.source_flags = -l SmartMessaging
 
 # -----------------------------------------------------------------------------
 # Telepathy extensions.

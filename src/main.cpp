@@ -42,7 +42,7 @@
 #include "fscleanup.h"
 #include "mmshandler.h"
 #include "mmshandler_adaptor.h"
-#include "smartmessaging_adaptor.h"
+#include "smartmessaging.h"
 #include "debug.h"
 
 bool toggleDebug;
@@ -203,7 +203,7 @@ Q_DECL_EXPORT int main(int argc, char **argv)
     new AccountOperationsObserver(utils->accountManager(), &app);
 
     new MmsHandlerAdaptor(new MmsHandler(&app));
-    new SmartMessagingAgentAdaptor(new SmartMessaging(&app));
+    new SmartMessaging(&app);
     new FsCleanup(&app);
 
     int result = app.exec();

@@ -23,7 +23,9 @@
 #define SMARTMESSAGING_H
 
 #include "messagehandlerbase.h"
+#include "qofonomanager.h"
 #include "qofonosmartmessaging.h"
+#include "qofonosmartmessagingagent.h"
 
 namespace CommHistory {
     class MessagePart;
@@ -38,23 +40,29 @@ public:
     ~SmartMessaging();
 
 private Q_SLOTS:
+    void onOfonoAvailableChanged(bool available);
     void onModemAdded(QString path);
     void onModemRemoved(QString path);
     void onValidChanged(bool valid);
-
-public: // for SmartMessagingAgentAdaptor
-    void ReceiveAppointment(QByteArray appointment, QVariantHash info);
-    void ReceiveBusinessCard(QByteArray card, QVariantHash info);
-    void Release();
+    void onReceiveBusinessCard(const QByteArray &vcard, const QVariantMap &info);
+    void onReceiveAppointment(const QByteArray &vcard, const QVariantMap &info);
+    void onRelease();
 
 private:
+    QString agentPathFromModem(const QString &modemPath);
+    QString accountPath(const QString &modemPath);
+    void addAllModems();
     void addModem(QString path);
+    void setup(const QString &path);
 
 private:
     static bool save(int id, QByteArray vcard, CommHistory::MessagePart& part);
 
 private:
+    QOfonoManager *ofono;
     QHash<QString,QOfonoSmartMessaging*> interfaces;
+    QHash<QString,QOfonoSmartMessagingAgent*> agents;
+    QHash<QString,QString> agentToModemPaths;
 };
 
 #endif // SMARTMESSAGING_H
