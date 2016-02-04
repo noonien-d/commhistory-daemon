@@ -750,7 +750,7 @@ void MmsHandler::sendMessageFromEvent(Event &event)
     DEBUG_("send flag are" << flags);
 
     QVariantList args;
-    args << event.id() << QString() << event.toList() << event.ccList() << event.bccList()
+    args << event.id() << imsi << event.toList() << event.ccList() << event.bccList()
          << event.subject() << flags << QVariant::fromValue(parts);
 
     m_activeEvents.insert(getModemPath(imsi), event.id());
