@@ -233,7 +233,7 @@ QString MmsHandler::messageNotification(const QString &imsi, const QString &from
     }
 
     if (!manualDownload) {
-        m_activeEvents.append(event.id());
+        m_activeEvents.insert(modemPath, event.id());
     } else {
         // Show a notification when manual download is needed
         NotificationManager::instance()->showNotification(event, from, Group::ChatTypeP2P);
@@ -261,7 +261,8 @@ void MmsHandler::messageReceiveStateChanged(const QString &recId, int state)
 
     if (!event.isValid()) {
         qWarning() << "Ignoring MMS message receive state for unknown event" << recId;
-        m_activeEvents.removeOne(recId.toInt());
+        const QString imsi = event.extraProperty(MMS_PROPERTY_IMSI).toString();
+        m_activeEvents.remove(getModemPath(imsi), recId.toInt());
         return;
     }
 
@@ -292,7 +293,8 @@ void MmsHandler::messageReceiveStateChanged(const QString &recId, int state)
             qWarning() << "Failed updating MMS event status for" << recId;
 
         if (newStatus != Event::WaitingStatus && newStatus != Event::DownloadingStatus) {
-            m_activeEvents.removeOne(event.id());
+            const QString imsi = event.extraProperty(MMS_PROPERTY_IMSI).toString();
+            m_activeEvents.remove(getModemPath(imsi), event.id());
             NotificationManager::instance()->showNotification(event, event.recipients().value(0).remoteUid(), Group::ChatTypeP2P);
         }
     }
@@ -307,7 +309,8 @@ void MmsHandler::messageReceived(const QString &recId, const QString &mmsId, con
     if (model.getEventById(recId.toInt()))
         event = model.event();
 
-    m_activeEvents.removeOne(recId.toInt());
+    const QString imsi = event.extraProperty(MMS_PROPERTY_IMSI).toString();
+    m_activeEvents.remove(getModemPath(imsi), recId.toInt());
 
     if (!event.isValid()) {
         qWarning() << "Received messageReceived with unknown recId. Setting localUid to currently active account path.";
@@ -468,7 +471,8 @@ void MmsHandler::messageSendStateChanged(const QString &recId, int state, const 
 
     if (!event.isValid()) {
         qWarning() << "Ignoring MMS message send state for unknown event" << recId;
-        m_activeEvents.removeOne(recId.toInt());
+        const QString imsi = event.extraProperty(MMS_PROPERTY_IMSI).toString();
+        m_activeEvents.remove(getModemPath(imsi), recId.toInt());
         return;
     }
 
@@ -495,7 +499,8 @@ void MmsHandler::messageSendStateChanged(const QString &recId, int state, const 
             qWarning() << "Failed updating MMS event status for" << recId;
 
         if (newStatus != Event::SendingStatus) {
-            m_activeEvents.removeOne(event.id());
+            const QString imsi = event.extraProperty(MMS_PROPERTY_IMSI).toString();
+            m_activeEvents.remove(getModemPath(imsi), event.id());
             NotificationManager::instance()->showNotification(event, event.recipients().value(0).remoteUid(), Group::ChatTypeP2P, details);
         }
     }
@@ -508,7 +513,8 @@ void MmsHandler::messageSent(const QString &recId, const QString &mmsId)
     if (model.getEventById(recId.toInt()))
         event = model.event();
 
-    m_activeEvents.removeOne(recId.toInt());
+    const QString imsi = event.extraProperty(MMS_PROPERTY_IMSI).toString();
+    m_activeEvents.remove(getModemPath(imsi), recId.toInt());
 
     if (!event.isValid()) {
         qWarning() << "Ignoring MMS message sent state for unknown event" << recId;
@@ -747,7 +753,7 @@ void MmsHandler::sendMessageFromEvent(Event &event)
     args << event.id() << QString() << event.toList() << event.ccList() << event.bccList()
          << event.subject() << flags << QVariant::fromValue(parts);
 
-    m_activeEvents.append(event.id());
+    m_activeEvents.insert(getModemPath(imsi), event.id());
 
     QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(callEngine("sendMessage", args), this);
     watcher->setProperty("mms-event-id", event.id());
@@ -809,13 +815,16 @@ bool MmsHandler::canSendReadReports(const QString &path)
 
 void MmsHandler::dataProhibitedChanged(const QString &path)
 {
-    if (!m_activeEvents.isEmpty() && isDataProhibited(path)) {
-        qWarning() << "Cancelling" << m_activeEvents.size() << "active MMS events due to roaming restrictions";
+    if (m_activeEvents.contains(path) && isDataProhibited(path)) {
+        qWarning() << "Cancelling" << m_activeEvents.count(path) << "active MMS events due to roaming restrictions";
         // Cancel any active events to prevent automatic retries
-        foreach (int eventId, m_activeEvents) {
-            callEngine("cancel", QVariantList() << eventId);
+        QMultiMap<QString, int>::iterator i = m_activeEvents.find(path);
+        while (i != m_activeEvents.end() && i.key() == path) {
+            callEngine("cancel", QVariantList() << i.value());
+            ++i;
         }
-        m_activeEvents.clear();
+
+        m_activeEvents.remove(path);
     }
 }
 

@@ -24,6 +24,7 @@
 #define MMSHANDLER_H
 
 #include <QHash>
+#include <QMultiMap>
 #include "messagehandlerbase.h"
 #include "mmspart.h"
 
@@ -97,7 +98,7 @@ private:
     QOfonoExtModemManager *m_ofonoExtModemManager;
     QHash<QString, MmsHandlerModem*> m_modems;
     MDConfGroup *m_imsiSettings;
-    QList<int> m_activeEvents;
+    QMultiMap<QString, int> m_activeEvents;
     QString m_defaultVoiceModem;
 };
 
