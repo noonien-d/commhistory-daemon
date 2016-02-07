@@ -124,10 +124,12 @@ QDBusPendingCall MmsHandler::callEngine(const QString &method, const QVariantLis
 void MmsHandler::onOfonoAvailableChanged(bool available)
 {
     DEBUG_("ofono available changed to" << available);
-    if (available)
+    if (available) {
         addAllModems();
-    else
-        qDeleteAll(m_modems);
+    } else {
+        qDeleteAll(m_modems.values());
+        m_modems.clear();
+    }
 }
 
 void MmsHandler::onModemAdded(QString path)
