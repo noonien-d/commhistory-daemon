@@ -778,6 +778,7 @@ void MmsHandler::onSendMessageFinished(QDBusPendingCallWatcher *call)
         event.setStatus(Event::TemporarilyFailedStatus);
         NotificationManager::instance()->showNotification(event, event.recipients().value(0).remoteUid(), Group::ChatTypeP2P);
     } else {
+        event.setSubscriberIdentity(reply.value());
         event.setExtraProperty(MMS_PROPERTY_IMSI, reply.value());
     }
 
