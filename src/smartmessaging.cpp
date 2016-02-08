@@ -65,6 +65,8 @@ void SmartMessaging::onOfonoAvailableChanged(bool available)
     } else {
         qDeleteAll(interfaces.values());
         qDeleteAll(agents.values());
+        interfaces.clear();
+        agents.clear();
         agentToModemPaths.clear();
     }
 }
