@@ -189,7 +189,7 @@ bool NotificationManager::updateEditedEvent(const CommHistory::Event& event, con
         }
     }
 
-    EventGroupProperties groupProperties(eventGroup(PersonalNotification::collection(event.type()), event.localUid(), event.recipients().value(0).remoteUid()));
+    EventGroupProperties groupProperties(eventGroup(PersonalNotification::collection(event.type()), event.recipients().value(0)));
     NotificationGroup *eventGroup = m_Groups.value(groupProperties);
     if (!eventGroup)
         return false;
@@ -373,8 +373,6 @@ void NotificationManager::removeConversationNotifications(const CommHistory::Rec
     QHash<EventGroupProperties, NotificationGroup *>::const_iterator it = m_Groups.constBegin(), end = m_Groups.constEnd();
     for ( ; it != end; ++it) {
         NotificationGroup *group(it.value());
-        if (group->localUid() != recipient.localUid())
-            continue;
 
         foreach (PersonalNotification *notification, group->notifications()) {
             if (notification->collection() != PersonalNotification::Messaging ||
@@ -456,10 +454,10 @@ void NotificationManager::removeNotificationTypes(const QList<int> &types)
 
 void NotificationManager::addNotification(PersonalNotification *notification)
 {
-    EventGroupProperties groupProperties(eventGroup(notification->collection(), notification->account(), notification->remoteUid()));
+    EventGroupProperties groupProperties(eventGroup(notification->collection(), CommHistory::Recipient(notification->account(), notification->remoteUid())));
     NotificationGroup *group = m_Groups.value(groupProperties);
     if (!group) {
-        group = new NotificationGroup(groupProperties.collection, groupProperties.localUid, groupProperties.remoteUid, this);
+        group = new NotificationGroup(groupProperties.collection, notification->account(), notification->remoteUid(), this);
         m_Groups.insert(groupProperties, group);
     }
 

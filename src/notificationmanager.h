@@ -41,6 +41,7 @@
 #include <CommHistory/GroupModel>
 #include <CommHistory/ContactListener>
 #include <CommHistory/ContactResolver>
+#include <CommHistory/Recipient>
 
 // our includes
 #include "commhistoryservice.h"
@@ -68,17 +69,15 @@ public:
 
     struct EventGroupProperties {
         PersonalNotification::EventCollection collection;
-        QString localUid;
-        QString remoteUid;
+        CommHistory::Recipient recipient;
 
-        bool operator== (const EventGroupProperties &other) const { return (collection == other.collection && localUid == other.localUid && remoteUid == other.remoteUid); }
+        bool operator== (const EventGroupProperties &other) const { return (collection == other.collection && recipient.matches(other.recipient)); }
     };
 
-    static EventGroupProperties eventGroup(PersonalNotification::EventCollection c, const QString &l, const QString &r) {
+    static EventGroupProperties eventGroup(PersonalNotification::EventCollection c, const CommHistory::Recipient &recipient) {
         EventGroupProperties properties;
         properties.collection = c;
-        properties.localUid = l;
-        properties.remoteUid = r;
+        properties.recipient = recipient;
         return properties;
     }
 
@@ -199,7 +198,10 @@ private:
 inline uint qHash(const NotificationManager::EventGroupProperties &properties, uint seed)
 {
     using ::qHash;
-    return qHash(properties.collection, seed) ^ qHash(properties.localUid, seed) ^ qHash(properties.remoteUid, seed);
+    // EventGroups are ultimately equivalent by the contacts they resolve to, so we should use
+    // contact ID as the hash differentiator.  UID pairs that do not resolve to a contact will
+    // therefore all hash to the same value, which will be inefficient, but work correctly
+    return qHash(properties.collection, seed) ^ qHash(properties.recipient.contactId(), seed);
 }
 
 } // namespace RTComLogger

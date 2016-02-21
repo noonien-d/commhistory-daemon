@@ -36,6 +36,7 @@
 #define CONTACT_2_REMOTE_ID QLatin1String("td2@localhost")
 #define DUT_ACCOUNT_PATH QLatin1String("/org/freedesktop/Telepathy/Account/gabble/jabber/dut_40localhost0")
 #define MESSAGE_TEXT QLatin1String("Testing notifications!")
+#define RING_ACCOUNT_PATH "/org/freedesktop/Telepathy/Account/ring/tel/"
 
 using namespace RTComLogger;
 using namespace CommHistory;
@@ -80,7 +81,7 @@ void Ut_NotificationManager::cleanup()
 {
 }
 
-CommHistory::Event Ut_NotificationManager::createEvent(CommHistory::Event::EventType type, const QString &remoteUid)
+CommHistory::Event Ut_NotificationManager::createEvent(CommHistory::Event::EventType type, const QString &remoteUid, const QString &localUid = DUT_ACCOUNT_PATH)
 {
     eventId++;
     CommHistory::Event event;
@@ -88,8 +89,8 @@ CommHistory::Event Ut_NotificationManager::createEvent(CommHistory::Event::Event
     event.setDirection(CommHistory::Event::Inbound);
     event.setStartTime(QDateTime::currentDateTime());
     event.setEndTime(QDateTime::currentDateTime());
-    event.setLocalUid(DUT_ACCOUNT_PATH);
-    event.setRecipients(Recipient(DUT_ACCOUNT_PATH, remoteUid));
+    event.setLocalUid(localUid);
+    event.setRecipients(Recipient(localUid, remoteUid));
 
     if (type == CommHistory::Event::IMEvent || type == CommHistory::Event::SMSEvent) {
         event.setFreeText(MESSAGE_TEXT);
@@ -105,13 +106,19 @@ CommHistory::Event Ut_NotificationManager::createEvent(CommHistory::Event::Event
 
 PersonalNotification *Ut_NotificationManager::getNotification(const CommHistory::Event &event)
 {
-    NotificationManager::EventGroupProperties groupProperties(NotificationManager::eventGroup(PersonalNotification::collection(event.type()), event.localUid(), event.recipients().value(0).remoteUid()));
+    NotificationManager::EventGroupProperties groupProperties(NotificationManager::eventGroup(PersonalNotification::collection(event.type()), event.recipients().value(0)));
     NotificationGroup *group = nm->m_Groups.value(groupProperties);
     foreach (PersonalNotification *pn, group->notifications()) {
         if (pn->eventToken() == event.messageToken())
             return pn;
     }
     return 0;
+}
+
+NotificationGroup *Ut_NotificationManager::getGroup(const CommHistory::Event &event)
+{
+    NotificationManager::EventGroupProperties groupProperties(NotificationManager::eventGroup(PersonalNotification::collection(event.type()), event.recipients().value(0)));
+    return nm->m_Groups.value(groupProperties);
 }
 
 void Ut_NotificationManager::testShowNotification()
@@ -131,11 +138,52 @@ void Ut_NotificationManager::testShowNotification()
     QTRY_VERIFY(n);
     QTRY_VERIFY(n->replacesId() > 0);
 
-    NotificationManager::EventGroupProperties groupProperties(NotificationManager::eventGroup(PersonalNotification::collection(event.type()), event.localUid(), event.recipients().value(0).remoteUid()));
-    NotificationGroup *group = nm->m_Groups.value(groupProperties);
+    NotificationGroup *group = getGroup(event);
     Notification *groupNotification = group->notification();
     QVERIFY(groupNotification);
     QVERIFY(groupNotification->replacesId() > 0);
+}
+
+void Ut_NotificationManager::groupNotifications()
+{
+    CommHistory::Event event = createEvent(CommHistory::Event::SMSEvent, "12345678", RING_ACCOUNT_PATH "account0");
+    nm->showNotification(event, "12345678");
+    QTRY_COMPARE(nm->pendingEventCount(), 0);
+
+    NotificationGroup *group1 = getGroup(event);
+    QVERIFY(group1 != 0);
+
+    event = createEvent(CommHistory::Event::SMSEvent, "23456789", RING_ACCOUNT_PATH "account0");
+    nm->showNotification(event, "23456789");
+    QTRY_COMPARE(nm->pendingEventCount(), 0);
+
+    NotificationGroup *group2 = getGroup(event);
+    QVERIFY(group2 != 0);
+    QVERIFY(group2 != group1);
+
+    event = createEvent(CommHistory::Event::SMSEvent, "+0123456789", RING_ACCOUNT_PATH "account0");
+    nm->showNotification(event, "+0123456789");
+    QTRY_COMPARE(nm->pendingEventCount(), 0);
+
+    NotificationGroup *group3 = getGroup(event);
+    QVERIFY(group3 != 0);
+    QCOMPARE(group3, group2);
+
+    event = createEvent(CommHistory::Event::SMSEvent, "23456789", RING_ACCOUNT_PATH "account1");
+    nm->showNotification(event, "23456789");
+    QTRY_COMPARE(nm->pendingEventCount(), 0);
+
+    NotificationGroup *group4 = getGroup(event);
+    QVERIFY(group4 != 0);
+    QCOMPARE(group4, group2);
+
+    event = createEvent(CommHistory::Event::SMSEvent, "+1012345678", RING_ACCOUNT_PATH "account1");
+    nm->showNotification(event, "+1012345678");
+    QTRY_COMPARE(nm->pendingEventCount(), 0);
+
+    NotificationGroup *group5 = getGroup(event);
+    QVERIFY(group5 != 0);
+    QCOMPARE(group5, group1);
 }
 
 QTEST_MAIN(Ut_NotificationManager)

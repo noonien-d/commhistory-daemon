@@ -49,13 +49,15 @@ private Q_SLOTS:
 // Test functions
 private Q_SLOTS:
     void testShowNotification();
+    void groupNotifications();
 
 private:
     NotificationManager* nm;
     int eventId;
 
-    CommHistory::Event createEvent(CommHistory::Event::EventType type, const QString &remoteUid);
+    CommHistory::Event createEvent(CommHistory::Event::EventType type, const QString &remoteUid, const QString &localUid);
     PersonalNotification *getNotification(const CommHistory::Event &event);
+    NotificationGroup *getGroup(const CommHistory::Event &event);
 };
 
 }
