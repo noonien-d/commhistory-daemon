@@ -2,7 +2,7 @@
 **
 ** This file is part of commhistory-daemon.
 **
-** Copyright (C) 2014-2015 Jolla Ltd.
+** Copyright (C) 2014-2016 Jolla Ltd.
 ** Contact: Slava Monich <slava.monich@jolla.com>
 **
 ** This library is free software; you can redistribute it and/or modify it
@@ -37,11 +37,9 @@
 #include <QDBusPendingCall>
 #include <QDBusPendingCallWatcher>
 #include <mdconfgroup.h>
-#include <qofonomanager.h>
 #include <qofonosimmanager.h>
 #include <qofononetworkregistration.h>
 #include <qofonoconnectionmanager.h>
-#include <qofonoextmodemmanager.h>
 #include <unistd.h>
 
 using namespace RTComLogger;
@@ -82,24 +80,22 @@ class MmsHandlerModem
 
 MmsHandler::MmsHandler(QObject* parent)
     : MessageHandlerBase(parent, MMS_HANDLER_PATH, MMS_HANDLER_SERVICE)
-    , m_ofonoManager(new QOfonoManager(this))
-    , m_ofonoExtModemManager(new QOfonoExtModemManager(this))
+    , m_ofonoManager(QOfonoManager::instance())
+    , m_ofonoExtModemManager(QOfonoExtModemManager::instance())
     , m_imsiSettings(new MDConfGroup(QStringLiteral("/imsi"), this))
 {
     qDBusRegisterMetaType<MmsPart>();
     qDBusRegisterMetaType<MmsPartList>();
     qDBusRegisterMetaType<QList<CommHistory::Event> >();
 
-    connect(m_ofonoExtModemManager, SIGNAL(defaultVoiceModemChanged(QString)),
-                                    SLOT(onDefaultVoiceModemChanged(QString)));
-
-    connect(m_ofonoManager, SIGNAL(modemAdded(QString)), SLOT(onModemAdded(QString)));
-    connect(m_ofonoManager, SIGNAL(modemRemoved(QString)), SLOT(onModemRemoved(QString)));
+    QOfonoManager* ofonoManager = m_ofonoManager.data();
+    connect(ofonoManager, SIGNAL(modemAdded(QString)), SLOT(onModemAdded(QString)));
+    connect(ofonoManager, SIGNAL(modemRemoved(QString)), SLOT(onModemRemoved(QString)));
 
     if (m_ofonoManager->available())
         addAllModems();
 
-    connect(m_ofonoManager, SIGNAL(availableChanged(bool)), SLOT(onOfonoAvailableChanged(bool)));
+    connect(ofonoManager, SIGNAL(availableChanged(bool)), SLOT(onOfonoAvailableChanged(bool)));
 
 
     QDBusConnection dbus(QDBusConnection::sessionBus());
@@ -178,6 +174,11 @@ void MmsHandler::addModem(const QString &path)
                         SLOT(onRoamingAllowedChanged(bool)));
 }
 
+QString MmsHandler::getModemPath(const CommHistory::Event &event) const
+{
+    return getModemPath(event.subscriberIdentity());
+}
+
 QString MmsHandler::getModemPath(const QString &imsi) const
 {
     QString path;
@@ -212,7 +213,7 @@ QString MmsHandler::messageNotification(const QString &imsi, const QString &from
     event.setRecipients(Recipient(ringAccountPath, from));
     event.setSubject(subject);
     event.setSubscriberIdentity(imsi);
-    event.setExtraProperty(MMS_PROPERTY_IMSI, imsi);
+    event.setExtraProperty(MMS_PROPERTY_UNREAD, true);
     event.setExtraProperty(MMS_PROPERTY_EXPIRY, expiry);
     event.setExtraProperty(MMS_PROPERTY_PUSH_DATA, data.toBase64());
 
@@ -263,8 +264,7 @@ void MmsHandler::messageReceiveStateChanged(const QString &recId, int state)
 
     if (!event.isValid()) {
         qWarning() << "Ignoring MMS message receive state for unknown event" << recId;
-        const QString imsi = event.extraProperty(MMS_PROPERTY_IMSI).toString();
-        m_activeEvents.remove(getModemPath(imsi), recId.toInt());
+        m_activeEvents.remove(getModemPath(event), recId.toInt());
         return;
     }
 
@@ -295,8 +295,7 @@ void MmsHandler::messageReceiveStateChanged(const QString &recId, int state)
             qWarning() << "Failed updating MMS event status for" << recId;
 
         if (newStatus != Event::WaitingStatus && newStatus != Event::DownloadingStatus) {
-            const QString imsi = event.extraProperty(MMS_PROPERTY_IMSI).toString();
-            m_activeEvents.remove(getModemPath(imsi), event.id());
+            m_activeEvents.remove(getModemPath(event), event.id());
             NotificationManager::instance()->showNotification(event, event.recipients().value(0).remoteUid(), Group::ChatTypeP2P);
         }
     }
@@ -311,13 +310,12 @@ void MmsHandler::messageReceived(const QString &recId, const QString &mmsId, con
     if (model.getEventById(recId.toInt()))
         event = model.event();
 
-    const QString imsi = event.extraProperty(MMS_PROPERTY_IMSI).toString();
-    m_activeEvents.remove(getModemPath(imsi), recId.toInt());
+    m_activeEvents.remove(getModemPath(event), recId.toInt());
 
     if (!event.isValid()) {
         qWarning() << "Received messageReceived with unknown recId. Setting localUid to currently active account path.";
         // Create new event
-        QString ringAccountPath = accountPath(m_defaultVoiceModem);
+        QString ringAccountPath = accountPath(m_ofonoExtModemManager->defaultVoiceModem());
         event.setType(Event::MMSEvent);
         event.setEndTime(QDateTime::currentDateTime());
         event.setDirection(Event::Inbound);
@@ -341,10 +339,10 @@ void MmsHandler::messageReceived(const QString &recId, const QString &mmsId, con
     Q_UNUSED(cls);
 
     // We no longer need expiry and push data properties but we need
-    // to keep IMSI property until the message is read
-    event.setExtraProperty(MMS_PROPERTY_EXPIRY, QVariant());
-    event.setExtraProperty(MMS_PROPERTY_PUSH_DATA, QVariant());
-    if (!readReport) event.setExtraProperty(MMS_PROPERTY_IMSI, QVariant());
+    // the "unread" property until the message is read
+    event.removeExtraProperty(MMS_PROPERTY_EXPIRY);
+    event.removeExtraProperty(MMS_PROPERTY_PUSH_DATA);
+    if (!readReport) event.removeExtraProperty(MMS_PROPERTY_UNREAD);
 
     // Change UID/group if necessary
     if (event.recipients().value(0).remoteUid() != from) {
@@ -473,8 +471,7 @@ void MmsHandler::messageSendStateChanged(const QString &recId, int state, const 
 
     if (!event.isValid()) {
         qWarning() << "Ignoring MMS message send state for unknown event" << recId;
-        const QString imsi = event.extraProperty(MMS_PROPERTY_IMSI).toString();
-        m_activeEvents.remove(getModemPath(imsi), recId.toInt());
+        m_activeEvents.remove(getModemPath(event), recId.toInt());
         return;
     }
 
@@ -501,8 +498,7 @@ void MmsHandler::messageSendStateChanged(const QString &recId, int state, const 
             qWarning() << "Failed updating MMS event status for" << recId;
 
         if (newStatus != Event::SendingStatus) {
-            const QString imsi = event.extraProperty(MMS_PROPERTY_IMSI).toString();
-            m_activeEvents.remove(getModemPath(imsi), event.id());
+            m_activeEvents.remove(getModemPath(event), event.id());
             NotificationManager::instance()->showNotification(event, event.recipients().value(0).remoteUid(), Group::ChatTypeP2P, details);
         }
     }
@@ -515,8 +511,7 @@ void MmsHandler::messageSent(const QString &recId, const QString &mmsId)
     if (model.getEventById(recId.toInt()))
         event = model.event();
 
-    const QString imsi = event.extraProperty(MMS_PROPERTY_IMSI).toString();
-    m_activeEvents.remove(getModemPath(imsi), recId.toInt());
+    m_activeEvents.remove(getModemPath(event), recId.toInt());
 
     if (!event.isValid()) {
         qWarning() << "Ignoring MMS message sent state for unknown event" << recId;
@@ -613,7 +608,7 @@ void MmsHandler::readReportSendStatus(const QString &recId, int status)
         SingleEventModel model;
         if (model.getEventById(recId.toInt())) {
             Event event(model.event());
-            event.setExtraProperty(MMS_PROPERTY_IMSI, QVariant());
+            event.removeExtraProperty(MMS_PROPERTY_UNREAD);
             if (!model.modifyEvent(event)) {
                 qWarning() << "Failed to update MMS event" << event.id();
             }
@@ -635,8 +630,14 @@ static QStringList normalizeNumberList(const QStringList &in)
 int MmsHandler::sendMessage(const QStringList &to, const QStringList &cc, const QStringList &bcc,
         const QString &subject, MmsPartList parts)
 {
+    return sendMessage(m_ofonoExtModemManager->defaultVoiceSim(), to, cc, bcc, subject, parts);
+}
+
+int MmsHandler::sendMessage(const QString &imsi, const QStringList &to, const QStringList &cc, const QStringList &bcc,
+        const QString &subject, MmsPartList parts)
+{
     Event event;
-    QString ringAccountPath = accountPath(m_defaultVoiceModem);
+    QString ringAccountPath = accountPath(m_ofonoExtModemManager->defaultVoiceModem());
     event.setType(Event::MMSEvent);
     event.setStartTime(QDateTime::currentDateTime());
     event.setEndTime(event.startTime());
@@ -650,6 +651,7 @@ int MmsHandler::sendMessage(const QStringList &to, const QStringList &cc, const 
     event.setToList(normalizeNumberList(to));
     event.setCcList(normalizeNumberList(cc));
     event.setBccList(normalizeNumberList(bcc));
+    event.setSubscriberIdentity(imsi);
 
     // XXX Group conversations not yet supported
     if (to.size() + cc.size() + bcc.size() > 1) {
@@ -695,7 +697,7 @@ int MmsHandler::sendMessage(const QStringList &to, const QStringList &cc, const 
                 model.modifyEvent(event);
             }
         }
-    } else if (isDataProhibited(m_defaultVoiceModem)) {
+    } else if (isDataProhibited(m_ofonoExtModemManager->defaultVoiceModem())) {
         qWarning() << "Refusing to send MMS message due to data roaming restrictions";
         event.setStatus(Event::TemporarilyFailedStatus);
         model.modifyEvent(event);
@@ -746,10 +748,9 @@ void MmsHandler::sendMessageFromEvent(Event &event)
         parts.append(p);
     }
 
-    const QString imsi = event.extraProperty(MMS_PROPERTY_IMSI).toString();
-
+    const QString imsi = event.subscriberIdentity();
     unsigned int flags = m_imsiSettings->value(imsi + QStringLiteral("/mms/send-flags"), 0).toInt();
-    DEBUG_("send flag are" << flags);
+    DEBUG_("send flags are" << flags);
 
     QVariantList args;
     args << event.id() << imsi << event.toList() << event.ccList() << event.bccList()
@@ -764,27 +765,20 @@ void MmsHandler::sendMessageFromEvent(Event &event)
 
 void MmsHandler::onSendMessageFinished(QDBusPendingCallWatcher *call)
 {
-    bool ok = false;
-    int eventId = call->property("mms-event-id").toInt(&ok);
-
-    Event event;
-    SingleEventModel model;
-    if (ok && model.getEventById(eventId))
-        event = model.event();
-
     QDBusPendingReply<QString> reply = *call;
     if (reply.isError()) {
-        qCritical() << "Call to MmsEngine sendMessage failed:" << reply.error();
-        event.setStatus(Event::TemporarilyFailedStatus);
-        NotificationManager::instance()->showNotification(event, event.recipients().value(0).remoteUid(), Group::ChatTypeP2P);
-    } else {
-        event.setSubscriberIdentity(reply.value());
-        event.setExtraProperty(MMS_PROPERTY_IMSI, reply.value());
+        qWarning() << "Call to MmsEngine sendMessage failed:" << reply.error();
+        bool ok = false;
+        int eventId = call->property("mms-event-id").toInt(&ok);
+
+        SingleEventModel model;
+        if (ok && model.getEventById(eventId)) {
+            Event event = model.event();
+            event.setStatus(Event::TemporarilyFailedStatus);
+            model.modifyEvent(event);
+            NotificationManager::instance()->showNotification(event, event.recipients().value(0).remoteUid(), Group::ChatTypeP2P);
+        }
     }
-
-    if (!model.modifyEvent(event))
-        qCritical() << "Updating outgoing MMS event after sendMessage call failed:" << event.toString();
-
     call->deleteLater();
 }
 
@@ -851,17 +845,9 @@ void MmsHandler::onRoamingAllowedChanged(bool roaming)
     dataProhibitedChanged(m->path);
 }
 
-
-void MmsHandler::onDefaultVoiceModemChanged(QString modem)
-{
-    DEBUG_("onDefaultVoiceModemChanged" << modem);
-
-    m_defaultVoiceModem = modem;
-}
-
 void MmsHandler::eventMarkedAsRead(CommHistory::Event &event)
 {
-    const QString imsi = event.extraProperty(MMS_PROPERTY_IMSI).toString();
+    const QString imsi = event.subscriberIdentity();
 
     // Caller already checked canSendReadReports() so mobile data is allowed
     const bool sendReadReports = m_imsiSettings->value(
@@ -874,7 +860,7 @@ void MmsHandler::eventMarkedAsRead(CommHistory::Event &event)
         callEngine("sendReadReport", args);
     } else {
         DEBUG_("not allowed to send read report for" << event.id());
-        event.setExtraProperty(MMS_PROPERTY_IMSI, QVariant());
+        event.removeExtraProperty(MMS_PROPERTY_UNREAD);
         SingleEventModel model;
         if (!model.modifyEvent(event)) {
             qWarning() << "Failed to update MMS event" << event.id();
@@ -889,9 +875,8 @@ void MmsHandler::onEventsUpdated(const QList<CommHistory::Event> &events)
 
     for (int i=0; i<count; i++) {
         Event event(events.at(i));
-        const QString imsi = event.extraProperty(MMS_PROPERTY_IMSI).toString();
         DEBUG_(i << ":" << event.toString());
-        if (canSendReadReports(getModemPath(imsi))) {
+        if (canSendReadReports(getModemPath(event))) {
             if (MmsReadReportModel::acceptsEvent(event)) {
                 eventMarkedAsRead(event);
             }
@@ -913,8 +898,7 @@ void MmsHandler::onGroupsUpdatedFull(const QList<CommHistory::Group> &groups)
             DEBUG_(count << "MMS event(s) found in group" << gid);
             for (int j=0; j<count; j++) {
                 Event event(model.event(j));
-                const QString imsi = event.extraProperty(MMS_PROPERTY_IMSI).toString();
-                if (canSendReadReports(getModemPath(imsi))) {
+                if (canSendReadReports(getModemPath(event))) {
                     eventMarkedAsRead(event);
                 } else {
                     DEBUG_("can't send read report at the moment for" << event.id());

@@ -2,7 +2,7 @@
 **
 ** This file is part of commhistory-daemon.
 **
-** Copyright (C) 2014-2015 Jolla Ltd.
+** Copyright (C) 2014-2016 Jolla Ltd.
 ** Contact: Slava Monich <slava.monich@jolla.com>
 **
 ** This library is free software; you can redistribute it and/or modify it
@@ -25,6 +25,8 @@
 
 #include <QHash>
 #include <QMultiMap>
+#include <qofonomanager.h>
+#include <qofonoextmodemmanager.h>
 #include "messagehandlerbase.h"
 #include "mmspart.h"
 
@@ -35,8 +37,6 @@ namespace CommHistory {
 }
 
 class QDBusPendingCallWatcher;
-class QOfonoManager;
-class QOfonoExtModemManager;
 class MDConfGroup;
 class MmsHandlerModem;
 
@@ -61,6 +61,8 @@ public Q_SLOTS:
     void readReport(const QString &imsi, const QString &mmsId, const QString &recipient, int status);
     void readReportSendStatus(const QString &recId, int status);
 
+    int sendMessage(const QString &imsi, const QStringList &to, const QStringList &cc, const QStringList &bcc,
+            const QString &subject, MmsPartList parts);
     int sendMessage(const QStringList &to, const QStringList &cc, const QStringList &bcc,
             const QString &subject, MmsPartList parts);
     void sendMessageFromEvent(int eventId);
@@ -74,11 +76,11 @@ private Q_SLOTS:
     void onGroupsUpdatedFull(const QList<CommHistory::Group> &groups);
     void onStatusChanged(const QString &status);
     void onRoamingAllowedChanged(bool roaming);
-    void onDefaultVoiceModemChanged(QString modem);
 
 private:
     void addAllModems();
     void addModem(const QString &path);
+    QString getModemPath(const CommHistory::Event &event) const;
     QString getModemPath(const QString &imsi) const;
     void dataProhibitedChanged(const QString &path);
     static QDBusPendingCall callEngine(const QString &method, const QVariantList &args);
@@ -94,12 +96,11 @@ private:
     QString accountPath(const QString &modemPath);
 
 private:
-    QOfonoManager *m_ofonoManager;
-    QOfonoExtModemManager *m_ofonoExtModemManager;
+    QSharedPointer<QOfonoManager> m_ofonoManager;
+    QSharedPointer<QOfonoExtModemManager> m_ofonoExtModemManager;
     QHash<QString, MmsHandlerModem*> m_modems;
     MDConfGroup *m_imsiSettings;
     QMultiMap<QString, int> m_activeEvents;
-    QString m_defaultVoiceModem;
 };
 
 #endif // MMSHANDLER_H

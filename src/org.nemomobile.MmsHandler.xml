@@ -225,6 +225,27 @@
         <arg direction="out" type="i" name="eventId"/>
     </method>
 
+    <method name="sendMessage">
+        <!-- IMSI -->
+        <arg direction="in" type="s" name="imsi"/>
+        <!-- To: list -->
+        <arg direction="in" type="as" name="to"/>
+        <!-- Cc: list -->
+        <arg direction="in" type="as" name="cc"/>
+        <!-- Bcc: list -->
+        <arg direction="in" type="as" name="bcc"/>
+        <!-- Subject -->
+        <arg direction="in" type="s" name="subject"/>
+        <!--
+             List of message parts in the usual format.
+             All files will be copied before this method returns.
+        -->
+        <arg direction="in" type="a(sss)" name="parts"/>
+        <annotation name="org.qtproject.QtDBus.QtTypeName.In5" value="MmsPartList"/>
+        <!-- Event ID if successful, otherwise -1 -->
+        <arg direction="out" type="i" name="eventId"/>
+    </method>
+
     <!--
         ===============================================================
 
