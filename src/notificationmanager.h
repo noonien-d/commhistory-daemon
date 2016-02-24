@@ -148,6 +148,7 @@ private Q_SLOTS:
     void slotVoicemailWaitingChanged();
     void slotModemAdded(QString path);
     void slotModemRemoved(QString path);
+    void slotModemsChanged(QStringList modems);
     void slotValidChanged(bool valid);
 
 private:
