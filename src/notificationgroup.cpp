@@ -208,16 +208,36 @@ void NotificationGroup::updateGroupLater()
 QStringList NotificationGroup::contactNames()
 {
     QStringList names;
+    QList<QPair<CommHistory::Recipient, QString> > details;
+
     foreach (PersonalNotification *pn, mNotifications) {
         // events are ordered from most recent to oldest
-        QString name = pn->notificationName();
-        if (!names.contains(name)) {
-            names.prepend(name);
-        } else if (names.size() > 1) {
-            names.removeOne(name);
-            names.prepend(name);
+        const QString &name(pn->notificationName());
+        const CommHistory::Recipient &recipient(pn->recipient());
+
+        QList<QPair<CommHistory::Recipient, QString> >::iterator it = details.begin(), end = details.end();
+        for ( ; it != end; ++it) {
+            if (recipient.matches((*it).first)) {
+                // These events have the same recipient - use the longer name (this is for
+                // the case where both names are variants of the same phone number)
+                if (name.length() > (*it).second.length()) {
+                    (*it).second = name;
+                }
+                break;
+            }
+        }
+        if (it == details.end()) {
+            details.append(qMakePair(recipient, name));
         }
     }
+
+    // Reverse the order of the notifications
+    QList<QPair<CommHistory::Recipient, QString> >::const_iterator begin = details.begin(), it = details.end();
+    while (it != begin) {
+        --it;
+        names.append((*it).second);
+    }
+
     return names;
 }
 

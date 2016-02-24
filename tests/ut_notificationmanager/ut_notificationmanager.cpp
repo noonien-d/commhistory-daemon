@@ -152,6 +152,7 @@ void Ut_NotificationManager::groupNotifications()
 
     NotificationGroup *group1 = getGroup(event);
     QVERIFY(group1 != 0);
+    QCOMPARE(group1->contactNames(), QStringList() << QString("12345678"));
 
     event = createEvent(CommHistory::Event::SMSEvent, "23456789", RING_ACCOUNT_PATH "account0");
     nm->showNotification(event, "23456789");
@@ -160,6 +161,7 @@ void Ut_NotificationManager::groupNotifications()
     NotificationGroup *group2 = getGroup(event);
     QVERIFY(group2 != 0);
     QVERIFY(group2 != group1);
+    QCOMPARE(group2->contactNames(), QStringList() << QString("23456789"));
 
     event = createEvent(CommHistory::Event::SMSEvent, "+0123456789", RING_ACCOUNT_PATH "account0");
     nm->showNotification(event, "+0123456789");
@@ -168,6 +170,7 @@ void Ut_NotificationManager::groupNotifications()
     NotificationGroup *group3 = getGroup(event);
     QVERIFY(group3 != 0);
     QCOMPARE(group3, group2);
+    QCOMPARE(group3->contactNames(), QStringList() << QString("+0123456789"));
 
     event = createEvent(CommHistory::Event::SMSEvent, "23456789", RING_ACCOUNT_PATH "account1");
     nm->showNotification(event, "23456789");
@@ -176,6 +179,7 @@ void Ut_NotificationManager::groupNotifications()
     NotificationGroup *group4 = getGroup(event);
     QVERIFY(group4 != 0);
     QCOMPARE(group4, group2);
+    QCOMPARE(group4->contactNames(), QStringList() << QString("+0123456789"));
 
     event = createEvent(CommHistory::Event::SMSEvent, "+1012345678", RING_ACCOUNT_PATH "account1");
     nm->showNotification(event, "+1012345678");
@@ -184,6 +188,16 @@ void Ut_NotificationManager::groupNotifications()
     NotificationGroup *group5 = getGroup(event);
     QVERIFY(group5 != 0);
     QCOMPARE(group5, group1);
+    QCOMPARE(group5->contactNames(), QStringList() << QString("+1012345678"));
+
+    event = createEvent(CommHistory::Event::SMSEvent, "012345678", RING_ACCOUNT_PATH "account1");
+    nm->showNotification(event, "012345678");
+    QTRY_COMPARE(nm->pendingEventCount(), 0);
+
+    NotificationGroup *group6 = getGroup(event);
+    QVERIFY(group6 != 0);
+    QCOMPARE(group6, group1);
+    QCOMPARE(group6->contactNames(), QStringList() << QString("+1012345678"));
 }
 
 QTEST_MAIN(Ut_NotificationManager)

@@ -101,6 +101,8 @@ private:
     QList<PersonalNotification*> mNotifications;
     QTimer updateTimer;
 
+    friend class Ut_NotificationManager;
+
     QStringList contactNames();
     QString notificationGroupText();
     int countConversations();
