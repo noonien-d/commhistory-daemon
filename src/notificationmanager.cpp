@@ -113,6 +113,7 @@ void NotificationManager::init()
     connect(m_ngfClient, SIGNAL(eventCompleted(quint32)), SLOT(slotNgfEventFinished(quint32)));
 
     QOfonoManager* ofono = new QOfonoManager(this);
+    connect(ofono, SIGNAL(modemsChanged(QStringList)), this, SLOT(slotModemsChanged(QStringList)));
     connect(ofono, SIGNAL(modemAdded(QString)), this, SLOT(slotModemAdded(QString)));
     connect(ofono, SIGNAL(modemRemoved(QString)), this, SLOT(slotModemRemoved(QString)));
     QStringList modems = ofono->modems();
@@ -823,6 +824,15 @@ void NotificationManager::slotVoicemailWaitingChanged()
         voicemailNotification.publish();
         DEBUG() << (currentId ? "Updated" : "Created") << "voicemail waiting notification:" << voicemailNotification.replacesId();
     }
+}
+
+void NotificationManager::slotModemsChanged(QStringList modems)
+{
+    DEBUG() << "NotificationManager::slotModemsChanged";
+    qDeleteAll(interfaces.values());
+    interfaces.clear();
+    foreach (QString path, modems)
+        addModem(path);
 }
 
 void NotificationManager::slotModemAdded(QString path)
