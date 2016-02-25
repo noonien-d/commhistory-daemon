@@ -2,7 +2,7 @@
 **
 ** This file is part of commhistory-daemon.
 **
-** Copyright (C) 2014 Jolla Ltd.
+** Copyright (C) 2014-2016 Jolla Ltd.
 **
 ** This library is free software; you can redistribute it and/or modify it
 ** under the terms of the GNU Lesser General Public License version 2.1 as
@@ -38,9 +38,10 @@ using namespace CommHistory;
 using namespace RTComLogger;
 
 SmartMessaging::SmartMessaging(QObject* parent) :
-    MessageHandlerBase(parent, AGENT_PATH, AGENT_SERVICE)
+    MessageHandlerBase(parent, AGENT_PATH, AGENT_SERVICE),
+    ofonoManager(QOfonoManager::instance())
 {
-    ofono = new QOfonoManager(this);
+    QOfonoManager* ofono = ofonoManager.data();
     connect(ofono, SIGNAL(modemAdded(QString)), this, SLOT(onModemAdded(QString)));
     connect(ofono, SIGNAL(modemRemoved(QString)), this, SLOT(onModemRemoved(QString)));
     DEBUG_("created");
@@ -98,7 +99,7 @@ void SmartMessaging::setup(const QString &path)
 
 void SmartMessaging::addAllModems()
 {
-    QStringList modems = ofono->modems();
+    QStringList modems = ofonoManager->modems();
     foreach (QString path, modems) {
         DEBUG_("modem" << path);
         addModem(path);

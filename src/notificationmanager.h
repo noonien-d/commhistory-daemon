@@ -2,7 +2,7 @@
 **
 ** This file is part of commhistory-daemon.
 **
-** Copyright (C) 2013-2015 Jolla Ltd.
+** Copyright (C) 2013-2016 Jolla Ltd.
 ** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** Contact: John Brooks <john.brooks@jolla.com>
 **
@@ -34,6 +34,7 @@
 #include <QMultiHash>
 #include <QModelIndex>
 
+#include <qofonomanager.h>
 #include <qofonomessagewaiting.h>
 
 #include <CommHistory/Event>
@@ -189,6 +190,7 @@ private:
     Ngf::Client *m_ngfClient;
     quint32 m_ngfEvent;
 
+    QSharedPointer<QOfonoManager> ofonoManager;
     QHash<QString,QOfonoMessageWaiting*> interfaces;
 
 #ifdef UNIT_TEST
