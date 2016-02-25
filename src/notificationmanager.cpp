@@ -2,7 +2,7 @@
 **
 ** This file is part of commhistory-daemon.
 **
-** Copyright (C) 2013-2015 Jolla Ltd.
+** Copyright (C) 2013-2016 Jolla Ltd.
 ** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** Contact: John Brooks <john.brooks@jolla.com>
 **
@@ -112,14 +112,14 @@ void NotificationManager::init()
     connect(m_ngfClient, SIGNAL(eventFailed(quint32)), SLOT(slotNgfEventFinished(quint32)));
     connect(m_ngfClient, SIGNAL(eventCompleted(quint32)), SLOT(slotNgfEventFinished(quint32)));
 
-    QOfonoManager* ofono = new QOfonoManager(this);
+    ofonoManager = QOfonoManager::instance();
+    QOfonoManager* ofono = ofonoManager.data();
     connect(ofono, SIGNAL(modemsChanged(QStringList)), this, SLOT(slotModemsChanged(QStringList)));
     connect(ofono, SIGNAL(modemAdded(QString)), this, SLOT(slotModemAdded(QString)));
     connect(ofono, SIGNAL(modemRemoved(QString)), this, SLOT(slotModemRemoved(QString)));
     QStringList modems = ofono->modems();
-    DEBUG() << "Created modem manager, has modems: ";
+    DEBUG() << "Created modem manager";
     foreach (QString path, modems) {
-        DEBUG() << "modem: " << path;
         addModem(path);
     }
 

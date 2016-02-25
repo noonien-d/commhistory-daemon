@@ -2,7 +2,7 @@
 **
 ** This file is part of commhistory-daemon.
 **
-** Copyright (C) 2014 Jolla Ltd.
+** Copyright (C) 2014-2016 Jolla Ltd.
 **
 ** This library is free software; you can redistribute it and/or modify it
 ** under the terms of the GNU Lesser General Public License version 2.1 as
@@ -23,9 +23,9 @@
 #define SMARTMESSAGING_H
 
 #include "messagehandlerbase.h"
-#include "qofonomanager.h"
-#include "qofonosmartmessaging.h"
-#include "qofonosmartmessagingagent.h"
+#include <qofonomanager.h>
+#include <qofonosmartmessaging.h>
+#include <qofonosmartmessagingagent.h>
 
 namespace CommHistory {
     class MessagePart;
@@ -59,7 +59,7 @@ private:
     static bool save(int id, QByteArray vcard, CommHistory::MessagePart& part);
 
 private:
-    QOfonoManager *ofono;
+    QSharedPointer<QOfonoManager> ofonoManager;
     QHash<QString,QOfonoSmartMessaging*> interfaces;
     QHash<QString,QOfonoSmartMessagingAgent*> agents;
     QHash<QString,QString> agentToModemPaths;
