@@ -2,6 +2,7 @@
 **
 ** This file is part of commhistory-daemon.
 **
+** Copyright (C) 2013-2015 Jolla Ltd.
 ** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** Contact: Reto Zingg <reto.zingg@nokia.com>
 **
@@ -65,7 +66,7 @@ Q_SIGNALS:
                                  const QString& accountUniqueIdentifier);
     void callHistoryObservedChanged(bool observed);
     void inboxObservedChanged(bool observed, const QString &filterAccount);
-    void observedConversationsChanged(const QList<Conversation> &conversations);
+    void observedConversationsChanged(const QList<CommHistoryService::Conversation> &conversations);
 
 private:
     bool m_IsRegistered;
@@ -77,6 +78,6 @@ private:
     CommHistoryService( QObject* parent = 0 );
 };
 
-Q_DECLARE_METATYPE(CommHistoryService::Conversation);
+Q_DECLARE_METATYPE(CommHistoryService::Conversation)
 
 #endif // COMMHISTORYSERVICE_H
