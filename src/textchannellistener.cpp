@@ -1306,10 +1306,12 @@ void TextChannelListener::slotMessageSent(const Tp::Message &message,
         event.setSubscriberIdentity(siProp.toString());
     }
 
-    // according to latest ui spec, sending status
-    // should be set only for sms / mms messages
-    if(m_Account->protocolName() == PROTOCOL_TEL) {
+    if (m_Account->protocolName() == PROTOCOL_TEL) {
+        // Flag the message as Sending-in-progress
         event.setStatus(CommHistory::Event::SendingStatus);
+    } else {
+        // Flag the message as Sent, since we won't receive any further confirmation of delivery
+        event.setStatus(CommHistory::Event::SentStatus);
     }
 
     // check if Event is sms & Report_Delivery flag set

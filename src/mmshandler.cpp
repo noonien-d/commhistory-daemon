@@ -880,7 +880,7 @@ void MmsHandler::onEventsUpdated(const QList<CommHistory::Event> &events)
             if (MmsReadReportModel::acceptsEvent(event)) {
                 eventMarkedAsRead(event);
             }
-        } else
+        } else if (event.type() == Event::MMSEvent)
             DEBUG_("can't send read report for" << event.id());
     }
 }
