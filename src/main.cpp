@@ -26,6 +26,8 @@
 #include <syslog.h>
 #include <unistd.h>
 
+#include <QLocale>
+
 // Our includes
 #include <TelepathyQt/Debug>
 #include "logger.h"
@@ -85,7 +87,7 @@ void messageHandler(QtMsgType type, const QMessageLogContext &, const QString &m
     const QByteArray &msgData(message.toLocal8Bit());
     const char *msg = msgData.constData();
 
-    QByteArray timestamp = QDateTime::currentDateTime().toString("ss:zzz").toLocal8Bit();
+    QByteArray timestamp = QLocale::c().toString(QDateTime::currentDateTime(), "ss:zzz").toLocal8Bit();
     syslog(LOG_MAKEPRI(LOG_USER, priority),
            "%s [%s] %s",
            logLevel,
