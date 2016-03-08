@@ -21,12 +21,10 @@
 ******************************************************************************/
 
 #include "mmshandler.h"
-#include "mmspart.h"
 #include "constants.h"
 #include "notificationmanager.h"
 #include "debug.h"
-#include <CommHistory/Event>
-#include <CommHistory/SingleEventModel>
+#include <CommHistory/singleeventmodel.h>
 #include <CommHistory/mmsreadreportmodel.h>
 #include <CommHistory/commonutils.h>
 #include <CommHistory/groupmanager.h>
@@ -47,19 +45,24 @@ using namespace CommHistory;
 
 #define DEBUG_(x) qDebug() << "MmsHandler:" << x
 
+static const QString kSettingSendFlags("/mms/send-flags");
+static const QString kSettingAutomaticDownload("/mms/automatic-download");
+static const QString kSettingSendReadReports("/mms/send-read-reports");
+static const QString kNetworkStatusRoaming("roaming");
+static const char *kCallPropertyEventId = "mms-event-id";
+
 class MmsHandlerModem
 {
     public:
 
-    MmsHandlerModem(const QString &path_,
-                    QOfonoSimManager *sim_,
-                    QOfonoNetworkRegistration *network_,
-                    QOfonoConnectionManager *connection_):
-        path(path_),
-        sim(sim_),
-        network(network_),
-        connection(connection_)
+    MmsHandlerModem(const QString &path, QObject *parent) :
+        sim(new QOfonoSimManager(parent)),
+        network(new QOfonoNetworkRegistration(parent)),
+        connection(new QOfonoConnectionManager(parent))
     {
+        sim->setModemPath(path);
+        network->setModemPath(path);
+        connection->setModemPath(path);
     }
 
     ~MmsHandlerModem()
@@ -69,20 +72,16 @@ class MmsHandlerModem
         delete connection;
     }
 
-    const QString path;
     QOfonoSimManager *sim;
     QOfonoNetworkRegistration *network;
     QOfonoConnectionManager *connection;
-
-    QString cellularStatus;
-    bool roamingAllowed;
 };
 
 MmsHandler::MmsHandler(QObject* parent)
     : MessageHandlerBase(parent, MMS_HANDLER_PATH, MMS_HANDLER_SERVICE)
     , m_ofonoManager(QOfonoManager::instance())
     , m_ofonoExtModemManager(QOfonoExtModemManager::instance())
-    , m_imsiSettings(new MDConfGroup(QStringLiteral("/imsi"), this))
+    , m_imsiSettings(new MDConfGroup("/imsi", this))
 {
     qDBusRegisterMetaType<MmsPart>();
     qDBusRegisterMetaType<MmsPartList>();
@@ -156,21 +155,12 @@ void MmsHandler::addModem(const QString &path)
 
     DEBUG_("addModem" << path);
 
-    QOfonoSimManager *sim = new QOfonoSimManager(this);
-    QOfonoNetworkRegistration *network = new QOfonoNetworkRegistration(this);
-    QOfonoConnectionManager *connection = new QOfonoConnectionManager(this);
-
-    MmsHandlerModem *m = new MmsHandlerModem(path, sim, network, connection);
+    MmsHandlerModem *m = new MmsHandlerModem(path, this);
     m_modems.insert(path, m);
 
-    sim->setModemPath(path);
-
-    network->setModemPath(path);
-    connect(network, SIGNAL(statusChanged(const QString &)),
+    connect(m->network, SIGNAL(statusChanged(const QString &)),
                      SLOT(onStatusChanged(const QString &)));
-
-    connection->setModemPath(path);
-    connect(connection, SIGNAL(roamingAllowedChanged(bool)),
+    connect(m->connection, SIGNAL(roamingAllowedChanged(bool)),
                         SLOT(onRoamingAllowedChanged(bool)));
 }
 
@@ -196,6 +186,22 @@ QString MmsHandler::getModemPath(const QString &imsi) const
     return path;
 }
 
+QString MmsHandler::getDefaultVoiceSim() const
+{
+    if (m_ofonoExtModemManager->valid()) {
+        QString path = m_ofonoExtModemManager->defaultVoiceModem();
+        if (!path.isEmpty()) {
+            MmsHandlerModem *modem = m_modems.value(path);
+            if (modem && modem->sim->isValid()) {
+                QString imsi(modem->sim->subscriberIdentity());
+                DEBUG_("default voice sim for" << path << "is" << imsi);
+                return imsi;
+            }
+        }
+    }
+    return QString();
+}
+
 QString MmsHandler::messageNotification(const QString &imsi, const QString &from,
         const QString &subject, uint expiry, const QByteArray &data)
 {
@@ -219,7 +225,7 @@ QString MmsHandler::messageNotification(const QString &imsi, const QString &from
 
     // The default action is to download MMS automatically
     const bool manualDownload = isDataProhibited(modemPath)
-                || !m_imsiSettings->value(imsi + QStringLiteral("/mms/automatic-download"), true).toBool();
+                || !m_imsiSettings->value(imsi + kSettingAutomaticDownload, true).toBool();
 
     DEBUG_("manualDownload is" << manualDownload);
     event.setStatus(manualDownload ? Event::ManualNotificationStatus : Event::WaitingStatus);
@@ -630,7 +636,7 @@ static QStringList normalizeNumberList(const QStringList &in)
 int MmsHandler::sendMessage(const QStringList &to, const QStringList &cc, const QStringList &bcc,
         const QString &subject, MmsPartList parts)
 {
-    return sendMessage(m_ofonoExtModemManager->defaultVoiceSim(), to, cc, bcc, subject, parts);
+    return sendMessage(getDefaultVoiceSim(), to, cc, bcc, subject, parts);
 }
 
 int MmsHandler::sendMessage(const QString &imsi, const QStringList &to, const QStringList &cc, const QStringList &bcc,
@@ -651,7 +657,7 @@ int MmsHandler::sendMessage(const QString &imsi, const QStringList &to, const QS
     event.setToList(normalizeNumberList(to));
     event.setCcList(normalizeNumberList(cc));
     event.setBccList(normalizeNumberList(bcc));
-    event.setSubscriberIdentity(imsi);
+    if (!imsi.isEmpty()) event.setSubscriberIdentity(imsi);
 
     // XXX Group conversations not yet supported
     if (to.size() + cc.size() + bcc.size() > 1) {
@@ -702,7 +708,11 @@ int MmsHandler::sendMessage(const QString &imsi, const QStringList &to, const QS
         event.setStatus(Event::TemporarilyFailedStatus);
         model.modifyEvent(event);
     } else {
-        sendMessageFromEvent(event);
+        Event::EventStatus eventStatus = sendMessageFromEvent(event);
+        if (event.status() != eventStatus) {
+            event.setStatus(eventStatus);
+            model.modifyEvent(event);
+        }
     }
 
     if (event.status() >= Event::TemporarilyFailedStatus)
@@ -732,15 +742,14 @@ void MmsHandler::sendMessageFromEvent(int eventId)
         return;
     }
 
-    if (event.status() != Event::SendingStatus) {
-        event.setStatus(Event::SendingStatus);
+    Event::EventStatus eventStatus = sendMessageFromEvent(event);
+    if (event.status() != eventStatus) {
+        event.setStatus(eventStatus);
         model.modifyEvent(event);
     }
-
-    sendMessageFromEvent(event);
 }
 
-void MmsHandler::sendMessageFromEvent(Event &event)
+Event::EventStatus MmsHandler::sendMessageFromEvent(Event &event)
 {
     MmsPartList parts;
     foreach (const MessagePart &part, event.messageParts()) {
@@ -748,35 +757,47 @@ void MmsHandler::sendMessageFromEvent(Event &event)
         parts.append(p);
     }
 
-    const QString imsi = event.subscriberIdentity();
-    unsigned int flags = m_imsiSettings->value(imsi + QStringLiteral("/mms/send-flags"), 0).toInt();
-    DEBUG_("send flags are" << flags);
+    QString imsi = event.subscriberIdentity();
+    if (imsi.isEmpty()) imsi = getDefaultVoiceSim();
 
-    QVariantList args;
-    args << event.id() << imsi << event.toList() << event.ccList() << event.bccList()
-         << event.subject() << flags << QVariant::fromValue(parts);
+    if (!imsi.isEmpty()) {
+        unsigned int flags = m_imsiSettings->value(imsi + kSettingSendFlags, 0).toInt();
+        DEBUG_("send flags are" << flags);
 
-    m_activeEvents.insert(getModemPath(imsi), event.id());
+        QVariantList args;
+        args << event.id() << imsi << event.toList() << event.ccList() << event.bccList()
+             << event.subject() << flags << QVariant::fromValue(parts);
 
-    QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(callEngine("sendMessage", args), this);
-    watcher->setProperty("mms-event-id", event.id());
-    connect(watcher, SIGNAL(finished(QDBusPendingCallWatcher*)), SLOT(onSendMessageFinished(QDBusPendingCallWatcher*)));
+        m_activeEvents.insert(getModemPath(imsi), event.id());
+
+        QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(callEngine("sendMessage", args), this);
+        watcher->setProperty(kCallPropertyEventId, event.id());
+        connect(watcher, SIGNAL(finished(QDBusPendingCallWatcher*)), SLOT(onSendMessageFinished(QDBusPendingCallWatcher*)));
+        return Event::SendingStatus;
+    } else {
+        return Event::TemporarilyFailedStatus;
+    }
 }
 
 void MmsHandler::onSendMessageFinished(QDBusPendingCallWatcher *call)
 {
     QDBusPendingReply<QString> reply = *call;
-    if (reply.isError()) {
-        qWarning() << "Call to MmsEngine sendMessage failed:" << reply.error();
-        bool ok = false;
-        int eventId = call->property("mms-event-id").toInt(&ok);
+    bool ok = false;
+    int eventId = call->property(kCallPropertyEventId).toInt(&ok);
 
-        SingleEventModel model;
-        if (ok && model.getEventById(eventId)) {
-            Event event = model.event();
+    SingleEventModel model;
+    if (ok && model.getEventById(eventId)) {
+        Event event = model.event();
+        if (reply.isError()) {
+            qWarning() << "Call to MmsEngine sendMessage failed:" << reply.error();
             event.setStatus(Event::TemporarilyFailedStatus);
+            // Commit the changes, in case if showNotification requires it
+            // or will require in the future:
             model.modifyEvent(event);
             NotificationManager::instance()->showNotification(event, event.recipients().value(0).remoteUid(), Group::ChatTypeP2P);
+        } else {
+            event.setSubscriberIdentity(reply.value());
+            model.modifyEvent(event);
         }
     }
     call->deleteLater();
@@ -789,9 +810,9 @@ bool MmsHandler::isDataProhibited(const QString &path)
 
     MmsHandlerModem *m = m_modems[path];
 
-    if (m->cellularStatus != "roaming")
+    if (m->network->status() != kNetworkStatusRoaming)
         return false;
-    if (!m->roamingAllowed)
+    if (!m->connection->roamingAllowed())
         return true;
 
     // TODO: This property should be monitored asynchronously to avoid blocking dbus queries
@@ -829,20 +850,16 @@ void MmsHandler::onStatusChanged(const QString &status)
 {
     QOfonoNetworkRegistration *network = (QOfonoNetworkRegistration*) sender();
 
-    MmsHandlerModem *m = m_modems[network->modemPath()];
-    m->cellularStatus = status;
-    DEBUG_("status changed for" << m->path << "to" << status);
-    dataProhibitedChanged(m->path);
+    DEBUG_("status changed for" << network->modemPath() << "to" << status);
+    dataProhibitedChanged(network->modemPath());
 }
 
 void MmsHandler::onRoamingAllowedChanged(bool roaming)
 {
     QOfonoConnectionManager *connection = (QOfonoConnectionManager*) sender();
 
-    MmsHandlerModem *m =m_modems[connection->modemPath()];
-    m->roamingAllowed = roaming;
-    DEBUG_("roaming allowed changed for" << m->path << "to" << roaming);
-    dataProhibitedChanged(m->path);
+    DEBUG_("roaming allowed changed for" << connection->modemPath() << "to" << roaming);
+    dataProhibitedChanged(connection->modemPath());
 }
 
 void MmsHandler::eventMarkedAsRead(CommHistory::Event &event)
@@ -851,7 +868,7 @@ void MmsHandler::eventMarkedAsRead(CommHistory::Event &event)
 
     // Caller already checked canSendReadReports() so mobile data is allowed
     const bool sendReadReports = m_imsiSettings->value(
-                imsi + QStringLiteral("/mms/send-read-reports"), false).toBool();
+                imsi + kSettingSendReadReports, false).toBool();
 
     if (sendReadReports) {
         DEBUG_("sending read report for" << event.id());

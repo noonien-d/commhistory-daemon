@@ -25,14 +25,13 @@
 
 #include <QHash>
 #include <QMultiMap>
+#include <CommHistory/event.h>
 #include <qofonomanager.h>
 #include <qofonoextmodemmanager.h>
 #include "messagehandlerbase.h"
 #include "mmspart.h"
 
 namespace CommHistory {
-    class MessagePart;
-    class Event;
     class Group;
 }
 
@@ -82,11 +81,12 @@ private:
     void addModem(const QString &path);
     QString getModemPath(const CommHistory::Event &event) const;
     QString getModemPath(const QString &imsi) const;
+    QString getDefaultVoiceSim() const;
     void dataProhibitedChanged(const QString &path);
     static QDBusPendingCall callEngine(const QString &method, const QVariantList &args);
     void eventMarkedAsRead(CommHistory::Event &event);
 
-    void sendMessageFromEvent(CommHistory::Event &event);
+    CommHistory::Event::EventStatus sendMessageFromEvent(CommHistory::Event &event);
     bool copyMmsPartFiles(const MmsPartList &parts, int eventId, QList<CommHistory::MessagePart> &eventParts, QString &freeText);
     QString copyMessagePartFile(const QString &sourcePath, int eventId, const QString &contentId);
 
