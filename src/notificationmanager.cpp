@@ -55,6 +55,9 @@ using namespace CommHistory;
 
 NotificationManager* NotificationManager::m_pInstance = 0;
 
+static const QString NgfdEventSms("sms");
+static const QString NgfdEventChat("chat");
+
 // constructor
 //
 NotificationManager::NotificationManager(QObject* parent)
@@ -222,11 +225,16 @@ void NotificationManager::showNotification(const CommHistory::Event& event,
                 m_ngfClient->connect();
 
             if (!m_ngfEvent) {
+                QMap<QString, QVariant> properties;
+                properties.insert("play.mode", "foreground");
+                const QString *ngfEvent;
                 if (event.type() == CommHistory::Event::SMSEvent || event.type() == CommHistory::Event::MMSEvent) {
-                    m_ngfEvent = m_ngfClient->play(QLatin1Literal(inboxObserved ? "sms" : "sms_fg"));
+                    ngfEvent = &NgfdEventSms;
                 } else {
-                    m_ngfEvent = m_ngfClient->play(QLatin1Literal(inboxObserved ? "chat" : "chat_fg"));
+                    ngfEvent = &NgfdEventChat;
                 }
+                DEBUG() << Q_FUNC_INFO << "play ngf event: " << ngfEvent;
+                m_ngfEvent = m_ngfClient->play(*ngfEvent, properties);
             }
 
             return;
