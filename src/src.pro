@@ -114,7 +114,7 @@ EXTENSIONS_DIR = $$IN_PWD/TpExtensions
 EXTENSIONS_GENERATED_DIR = $$EXTENSIONS_DIR/.gen
 TOOLS_DIR = $$IN_PWD/../tools
 PYTHON = $$TOOLS_DIR/python.sh 2.6
-MOC = moc
+MOC = $$TOOLS_DIR/mocwrapper.sh
 
 XINCLUDATOR = $$TOOLS_DIR/xincludator.py
 CONSTANTS_GEN = $$TOOLS_DIR/qt4-constants-gen.py
