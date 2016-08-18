@@ -82,6 +82,9 @@ void messageHandler(QtMsgType type, const QMessageLogContext &, const QString &m
     case QtFatalMsg:
         logLevel = "FATAL: ";
         priority = LOG_ALERT;
+        break;
+    default:
+        break;
     }
 
     const QByteArray &msgData(message.toLocal8Bit());
