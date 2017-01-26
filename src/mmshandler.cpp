@@ -2,7 +2,7 @@
 **
 ** This file is part of commhistory-daemon.
 **
-** Copyright (C) 2014-2016 Jolla Ltd.
+** Copyright (C) 2014-2017 Jolla Ltd.
 ** Contact: Slava Monich <slava.monich@jolla.com>
 **
 ** This library is free software; you can redistribute it and/or modify it
@@ -24,6 +24,7 @@
 #include "constants.h"
 #include "notificationmanager.h"
 #include "debug.h"
+#include <CommHistory/databaseio.h>
 #include <CommHistory/singleeventmodel.h>
 #include <CommHistory/mmsreadreportmodel.h>
 #include <CommHistory/commonutils.h>
@@ -95,7 +96,6 @@ MmsHandler::MmsHandler(QObject* parent)
         addAllModems();
 
     connect(ofonoManager, SIGNAL(availableChanged(bool)), SLOT(onOfonoAvailableChanged(bool)));
-
 
     QDBusConnection dbus(QDBusConnection::sessionBus());
     if (!dbus.connect(QString(), COMM_HISTORY_OBJECT_PATH, COMM_HISTORY_INTERFACE,
@@ -205,11 +205,28 @@ QString MmsHandler::getDefaultVoiceSim() const
 QString MmsHandler::messageNotification(const QString &imsi, const QString &from,
         const QString &subject, uint expiry, const QByteArray &data)
 {
+    return messageNotification(imsi, from, subject, expiry, data, QString());
+}
+
+QString MmsHandler::messageNotification(const QString &imsi, const QString &from,
+        const QString &subject, uint expiry, const QByteArray &data,
+        const QString &location)
+{
     QString modemPath = getModemPath(imsi);
     QString ringAccountPath = accountPath(modemPath);
     DEBUG_("got MMS message with imsi" << imsi
            << "modem path" << modemPath
            << "account path" << ringAccountPath);
+
+    if (!location.isEmpty()) {
+        Event event;
+        if (CommHistory::DatabaseIO::instance()->getEventByMmsId(location, event)) {
+            qWarning() << "MMS event" << location <<
+                          "is already in the database, id =" << event.id();
+            return QString();
+        }
+    }
+
     Event event;
     event.setType(Event::MMSEvent);
     event.setStartTime(QDateTime::currentDateTime());
@@ -219,6 +236,7 @@ QString MmsHandler::messageNotification(const QString &imsi, const QString &from
     event.setRecipients(Recipient(ringAccountPath, from));
     event.setSubject(subject);
     event.setSubscriberIdentity(imsi);
+    event.setMmsId(location);
     event.setExtraProperty(MMS_PROPERTY_UNREAD, true);
     event.setExtraProperty(MMS_PROPERTY_EXPIRY, expiry);
     event.setExtraProperty(MMS_PROPERTY_PUSH_DATA, data.toBase64());
@@ -343,6 +361,9 @@ void MmsHandler::messageReceived(const QString &recId, const QString &mmsId, con
     event.setStatus(Event::ReceivedStatus);
     Q_UNUSED(priority);
     Q_UNUSED(cls);
+
+    // MMS location is not needed anymore
+    event.setMmsId(QString());
 
     // We no longer need expiry and push data properties but we need
     // the "unread" property until the message is read

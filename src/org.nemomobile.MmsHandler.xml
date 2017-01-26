@@ -57,8 +57,24 @@
         <annotation name="org.gtk.GDBus.C.ForceGVariant" value="true"/>
       </arg>
       <!--
+          Message download URL. This URL should uniquely identify
+          the message. It can be used to detect and drop duplicate
+          notifications.
+      -->
+      <arg direction="in" type="s" name="location"/>
+      <!--
           Database record id for immediate retrieval, empty for manual.
       -->
+      <arg direction="out" type="s" name="recId"/>
+    </method>
+
+    <!-- Old variant (without location argument) -->
+    <method name="messageNotification">
+      <arg direction="in" type="s" name="imsi"/>
+      <arg direction="in" type="s" name="from"/>
+      <arg direction="in" type="s" name="subject"/>
+      <arg direction="in" type="u" name="expiry"/>
+      <arg type="ay" name="data" direction="in"/>
       <arg direction="out" type="s" name="recId"/>
     </method>
 
