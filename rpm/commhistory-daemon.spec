@@ -1,17 +1,17 @@
 Name:       commhistory-daemon
 Summary:    Communications event history database daemon
-Version:    0.8.12
+Version:    0.8.13
 Release:    1
 Group:      Communications/Telephony and IM
 License:    LGPLv2.1
-URL:        https://github.com/nemomobile/commhistory-daemon
+URL:        https://git.merproject.org/mer-core/commhistory-daemon
 Source0:    %{name}-%{version}.tar.bz2
 BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(Qt5DBus)
 BuildRequires:  pkgconfig(Qt5Contacts)
 BuildRequires:  pkgconfig(Qt5Versit)
 BuildRequires:  pkgconfig(Qt5Test)
-BuildRequires:  pkgconfig(commhistory-qt5) >= 1.9.26
+BuildRequires:  pkgconfig(commhistory-qt5) >= 1.9.33
 BuildRequires:  pkgconfig(contactcache-qt5)
 BuildRequires:  pkgconfig(qtcontacts-sqlite-qt5-extensions)
 BuildRequires:  pkgconfig(TelepathyQt5)
@@ -26,7 +26,7 @@ BuildRequires:  qt5-qttools-linguist
 BuildRequires:  libqofono-qt5-devel >= 0.89
 BuildRequires:  libqofonoext-devel
 BuildRequires:  python
-Requires:  libcommhistory-qt5 >= 1.9.24
+Requires:  libcommhistory-qt5 >= 1.9.33
 Requires:  libqofono-qt5 >= 0.66
 Requires:  mapplauncherd-qt5
 
