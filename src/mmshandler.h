@@ -2,7 +2,7 @@
 **
 ** This file is part of commhistory-daemon.
 **
-** Copyright (C) 2014-2016 Jolla Ltd.
+** Copyright (C) 2014-2017 Jolla Ltd.
 ** Contact: Slava Monich <slava.monich@jolla.com>
 **
 ** This library is free software; you can redistribute it and/or modify it
@@ -49,6 +49,8 @@ public:
 public Q_SLOTS:
     QString messageNotification(const QString &imsi, const QString &from, const QString &subject,
             uint expiry, const QByteArray &data);
+    QString messageNotification(const QString &imsi, const QString &from, const QString &subject,
+            uint expiry, const QByteArray &data, const QString &location);
     void messageReceiveStateChanged(const QString &recId, int state);
     void messageReceived(const QString &recId, const QString &mmsId, const QString &from,
             const QStringList &to, const QStringList &cc, const QString &subj, uint date, int priority,
