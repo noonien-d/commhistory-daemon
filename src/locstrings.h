@@ -113,6 +113,8 @@
 
 //% "SMS sending failed to %1"
 #define txt_qtn_msg_error_sms_sending_failed(STR) qtTrId("qtn_msg_error_sms_sending_failed").arg(STR)
+//% "Message sending failed to %1"
+#define txt_qtn_msg_error_sending_failed(STR) qtTrId("qtn_msg_error_sending_failed").arg(STR)
 //% "SMS sending failed. No message center number found in the sim card."
 #define txt_qtn_msg_error_missing_smsc qtTrId("qtn_msg_error_missing_smsc")
 //% "Fixed dialing active. Sending not allowed to %1."

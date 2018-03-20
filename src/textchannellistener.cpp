@@ -1123,7 +1123,7 @@ void TextChannelListener::handleMessageFailed(const Tp::ReceivedMessage &message
                 recipient = event.recipients().value(0).remoteUid();
             }
 
-            // general error
+            // general sms error
             QString errorMsgToUser = txt_qtn_msg_error_sms_sending_failed(recipient);
             QString category = StrongErrorCategory;
 
@@ -1146,6 +1146,11 @@ void TextChannelListener::handleMessageFailed(const Tp::ReceivedMessage &message
                      && areRemotePartiesOffline()) {
 
                 errorMsgToUser = txt_qtn_msg_general_does_not_support_offline;
+                category = ErrorCategory;
+            }
+            // IM message error
+            else if (event.type() == CommHistory::Event::IMEvent) {
+                errorMsgToUser = txt_qtn_msg_error_sending_failed(recipient);
                 category = ErrorCategory;
             }
 
