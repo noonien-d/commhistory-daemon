@@ -32,6 +32,7 @@ TARGET = commhistoryd
 # dependencies
 # -----------------------------------------------------------------------------
 QT += dbus contacts versit
+QT -= gui
 
 PKGCONFIG += ngf-qt5 mce nemonotifications-qt5
 PKGCONFIG += TelepathyQt5 commhistory-qt5 mlite5 mlocale5
