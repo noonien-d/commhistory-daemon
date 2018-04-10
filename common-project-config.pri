@@ -31,7 +31,7 @@ RCC_DIR         = resources
 UI_DIR          = ui
 UI_HEADERS_DIR  = ui/include
 UI_SOURCES_DIR  = ui/src
-QT             -= thread
+QT             -= thread gui
 
 # we don't like warnings...
 QMAKE_CXXFLAGS *= -Werror -Wno-unused-parameter -Wall -fno-exceptions
