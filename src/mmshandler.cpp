@@ -635,6 +635,10 @@ void MmsHandler::readReportSendStatus(const QString &recId, int status)
         SingleEventModel model;
         if (model.getEventById(recId.toInt())) {
             Event event(model.event());
+            if (!event.isValid()) {
+                qWarning() << "Failed to find sent MMS by id";
+                return;
+            }
             event.removeExtraProperty(MMS_PROPERTY_UNREAD);
             if (!model.modifyEvent(event)) {
                 qWarning() << "Failed to update MMS event" << event.id();
@@ -817,8 +821,12 @@ void MmsHandler::onSendMessageFinished(QDBusPendingCallWatcher *call)
             model.modifyEvent(event);
             NotificationManager::instance()->showNotification(event, event.recipients().value(0).remoteUid(), Group::ChatTypeP2P);
         } else {
-            event.setSubscriberIdentity(reply.value());
-            model.modifyEvent(event);
+            if (event.isValid()) {
+                event.setSubscriberIdentity(reply.value());
+                model.modifyEvent(event);
+            } else {
+                qWarning() << "Cannot find sent message by id" << eventId;
+            }
         }
     }
     call->deleteLater();

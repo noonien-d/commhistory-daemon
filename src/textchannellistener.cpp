@@ -1281,7 +1281,7 @@ void TextChannelListener::slotMessageSent(const Tp::Message &message,
     DEBUG() << "Handling sent message: " << m_Account->objectPath() << "->" << remoteUid << messageText;
 
     CommHistory::Event event;
-    if (existingEventId >= 0 && getEventById(existingEventId, event)) {
+    if (existingEventId >= 0 && getEventById(existingEventId, event) && event.isValid()) {
         DEBUG() << "Sent message has an existing event" << existingEventId;
     } else {
         fillEventFromMessage(message, event);
