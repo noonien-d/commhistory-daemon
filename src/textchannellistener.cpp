@@ -339,20 +339,7 @@ void TextChannelListener::slotGroupInserted(const QModelIndex &index, int start,
     DEBUG() << Q_FUNC_INFO << "Account path handled by this listener: " << m_Account->objectPath();
     DEBUG() << Q_FUNC_INFO << "Target handled by this listener: " << targetId();
 
-    for (int i = start; i <= end; i++) {
-        QModelIndex row = m_GroupModel->index(i, 0, index);
-        CommHistory::Group group = m_GroupModel->group(row);
-
-        DEBUG() << Q_FUNC_INFO << "Inserted group's account: " << group.localUid();
-        DEBUG() << Q_FUNC_INFO << "Inserted group's target: " << group.recipients().value(0).remoteUid();
-
-        const Recipient recipient(m_Account->objectPath(), targetId());
-        if (group.isValid() && group.recipients().containsMatch(recipient)) {
-            DEBUG() << Q_FUNC_INFO << "found listener for group" << group.id();
-            m_Group = group;
-            break;
-        }
-    }
+    updateCurrentGroup(start, end, index);
 }
 
 void TextChannelListener::slotGroupRemoved(const QModelIndex &index, int start, int end)
@@ -503,34 +490,7 @@ void TextChannelListener::slotOnModelReady(bool status)
     // otherwise add a new group only when a new message(received/sent) comes
     const int groupCount = m_GroupModel->rowCount();
     if (groupCount > 0 && m_Account) {
-        const Recipient recipient(m_Account->objectPath(), targetId());
-        int fallbackRow = -1;
-        int row = 0;
-        for ( ; row < groupCount; row++) {
-            const QModelIndex &index = m_GroupModel->index(row, 0);
-            const CommHistory::Group &group = m_GroupModel->group(index);
-            if (group.isValid()) {
-                const CommHistory::RecipientList &recipients = group.recipients();
-                if (recipients.count() > 1) {
-                    // This is a multi-member group; prefer to continue searching for an exact match
-                    if (fallbackRow == -1 && recipients.containsMatch(recipient)) {
-                        fallbackRow = row;
-                    }
-                } else if (recipients.containsMatch(recipient)) {
-                    m_Group = group;
-                    DEBUG() << Q_FUNC_INFO << "found existing group:" << m_Group.id();
-                    break;
-                }
-            }
-        }
-        if (row == groupCount) {
-            if (fallbackRow != -1) {
-                m_Group = m_GroupModel->group(m_GroupModel->index(fallbackRow, 0));
-                DEBUG() << Q_FUNC_INFO << "found existing multi-member group:" << m_Group.id();
-            } else {
-                DEBUG() << Q_FUNC_INFO << "no existing group found for targetId:" << targetId();
-            }
-        }
+        updateCurrentGroup(0, groupCount - 1);
     }
 
     channelListenerReady();
@@ -1466,6 +1426,46 @@ void TextChannelListener::sendGroupChatEvent(const QString &message)
     {
         DEBUG() << "*** Adding group chat event message to data model has been failed.";
      }
+}
+
+void TextChannelListener::updateCurrentGroup(int start, int end, const QModelIndex &parent)
+{
+    DEBUG() << __PRETTY_FUNCTION__ << start << end;
+
+    const Recipient recipient(m_Account->objectPath(), targetId());
+    int fallbackRow = -1;
+    int row = start;
+    for ( ; row <= end; row++) {
+        const QModelIndex &index = m_GroupModel->index(row, 0, parent);
+        const CommHistory::Group &group = m_GroupModel->group(index);
+
+        DEBUG() << Q_FUNC_INFO << "Inserted group's account: " << group.localUid();
+        DEBUG() << Q_FUNC_INFO << "Inserted group's first target: " << group.recipients().value(0).remoteUid();
+
+        if (group.isValid()) {
+            const CommHistory::RecipientList &recipients = group.recipients();
+            if (recipients.count() > 1) {
+                DEBUG() << Q_FUNC_INFO << "has multiple recipients" << recipients.count();
+                // This is a multi-member group; prefer to continue searching for an exact match
+                if (fallbackRow == -1 && recipients.containsMatch(recipient)) {
+                    DEBUG() << Q_FUNC_INFO << "set fallbackRow" << fallbackRow;
+                    fallbackRow = row;
+                }
+            } else if (recipients.containsMatch(recipient)) {
+                m_Group = group;
+                DEBUG() << Q_FUNC_INFO << "found existing group:" << m_Group.id();
+                break;
+            }
+        }
+    }
+    if (row == end) {
+        if (fallbackRow != -1) {
+            m_Group = m_GroupModel->group(m_GroupModel->index(fallbackRow, 0));
+            DEBUG() << Q_FUNC_INFO << "found existing multi-member group:" << m_Group.id();
+        } else {
+            DEBUG() << Q_FUNC_INFO << "no existing group found for targetId:" << targetId();
+        }
+    }
 }
 
 void TextChannelListener::slotEventsCommitted(QList<CommHistory::Event> events, bool status)
