@@ -6,6 +6,7 @@ Group:      Communications/Telephony and IM
 License:    LGPLv2.1
 URL:        https://git.merproject.org/mer-core/commhistory-daemon
 Source0:    %{name}-%{version}.tar.bz2
+Source1:    %{name}.privileges
 BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(Qt5DBus)
 BuildRequires:  pkgconfig(Qt5Contacts)
@@ -68,6 +69,9 @@ rm -rf %{buildroot}
 mkdir -p %{buildroot}%{_libdir}/systemd/user/user-session.target.wants
 ln -s ../commhistoryd.service %{buildroot}%{_libdir}/systemd/user/user-session.target.wants/
 
+mkdir -p %{buildroot}%{_datadir}/mapplauncherd/privileges.d
+install -m 644 -p %{SOURCE1} %{buildroot}%{_datadir}/mapplauncherd/privileges.d
+
 %files
 %defattr(-,root,root,-)
 %{_bindir}/commhistoryd
@@ -78,6 +82,7 @@ ln -s ../commhistoryd.service %{buildroot}%{_libdir}/systemd/user/user-session.t
 %{_datadir}/telepathy/clients/CommHistory.client
 %{_sysconfdir}/dbus-1/system.d/org.nemomobile.MmsHandler.conf
 %{_sysconfdir}/dbus-1/system.d/org.ofono.SmartMessagingAgent.conf
+%{_datadir}/mapplauncherd/privileges.d/*
 
 %files tests
 %defattr(-,root,root,-)
