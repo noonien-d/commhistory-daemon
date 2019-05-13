@@ -492,6 +492,18 @@ bool ReceivedMessage::isScrollback() const
 }
 
 /**
+ * Return whether the incoming message should trigger a user notification.
+ *
+ * If \c true, UI should not notify the user about this message.
+ *
+ * \return \c true if the silent flag is set, \c false otherwise.
+ */
+bool ReceivedMessage::isSilent() const
+{
+    return booleanFromPart(mPriv->parts, 0, "silent", false);
+}
+
+/**
  * Return the details of a delivery report.
  *
  * \return The delivery report as a ReceivedMessage::DeliveryDetails object.

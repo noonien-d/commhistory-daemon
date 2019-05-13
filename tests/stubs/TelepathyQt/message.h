@@ -119,6 +119,7 @@ public:
     QDateTime received() const;
     ContactPtr sender() const;
     bool isScrollback() const;
+    bool isSilent() const;
 
     DeliveryDetails deliveryDetails() const;
 
