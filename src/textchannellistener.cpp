@@ -621,6 +621,8 @@ void TextChannelListener::handleMessages()
               // Normal sms
             } else {
                 QString supersedes = supersedesToken(message.header());
+                bool silent = message.isSilent();
+
                 if (!supersedes.isEmpty()) {
                     CommHistory::Event originalEvent;
                     getEventForToken(supersedes, QString(), m_Group.id(), originalEvent);
@@ -631,7 +633,9 @@ void TextChannelListener::handleMessages()
                         event.setMessageToken(supersedes);
                         addEvents << event;
                         addMessages << message;
-                        nManager->showNotification(event, targetId(), m_Group.chatType());
+                        if (!silent) {
+                            nManager->showNotification(event, targetId(), m_Group.chatType());
+                        }
                     } else {
                         //update message
                         originalEvent.setFreeText(event.freeText());
@@ -643,10 +647,11 @@ void TextChannelListener::handleMessages()
                         modifyMessages[event.groupId()] << message;
                         modifyTokens[event.groupId()].insertMulti(originalEvent.id(),originalEvent.messageToken());
 
-                        nManager->showNotification(originalEvent, targetId(), m_Group.chatType());
+                        if (!silent) {
+                            nManager->showNotification(originalEvent, targetId(), m_Group.chatType());
+                        }
                     }
-                }
-                else {
+                } else {
                     if (message.isScrollback()) {
                         scrollbackEvents << event;
                     } else {
@@ -655,7 +660,9 @@ void TextChannelListener::handleMessages()
                     addMessages << message;
 
                     if (event.direction() != CommHistory::Event::Outbound) {
-                        nManager->showNotification(event, targetId(), m_Group.chatType());
+                        if (!silent) {
+                            nManager->showNotification(event, targetId(), m_Group.chatType());
+                        }
                     }
                 }
             }
