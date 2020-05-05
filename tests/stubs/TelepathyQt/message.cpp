@@ -327,6 +327,79 @@ MessagePart& Message::ut_part(uint index)
  */
 
 /**
+ * \class ReceivedMessage::DeliveryDetails
+ * \ingroup clientchannel
+ * \headerfile TelepathyQt/message.h <TelepathyQt/ReceivedMessage>
+ *
+ * \brief The ReceivedMessage::DeliveryDetails class represents the details of a delivery report.
+ */
+
+struct ReceivedMessage::DeliveryDetails::Private : public QSharedData
+{
+    Private(const MessagePartList &parts)
+        : parts(parts)
+    {
+    }
+
+    MessagePartList parts;
+};
+
+/**
+ * Default constructor.
+ */
+ReceivedMessage::DeliveryDetails::DeliveryDetails()
+{
+}
+
+/**
+ * Copy constructor.
+ */
+ReceivedMessage::DeliveryDetails::DeliveryDetails(const DeliveryDetails &other)
+    : mPriv(other.mPriv)
+{
+}
+
+/**
+ * Construct a new ReceivedMessage::DeliveryDetails object.
+ *
+ * \param The message parts.
+ */
+ReceivedMessage::DeliveryDetails::DeliveryDetails(const MessagePartList &parts)
+    : mPriv(new Private(parts))
+{
+}
+
+/**
+ * Class destructor.
+ */
+ReceivedMessage::DeliveryDetails::~DeliveryDetails()
+{
+}
+
+/**
+ * Assignment operator.
+ */
+ReceivedMessage::DeliveryDetails &ReceivedMessage::DeliveryDetails::operator=(
+        const DeliveryDetails &other)
+{
+    this->mPriv = other.mPriv;
+    return *this;
+}
+
+/**
+ * Return the delivery status of a message.
+ *
+ * \return The delivery status as #DeliveryStatus.
+ */
+DeliveryStatus ReceivedMessage::DeliveryDetails::status() const
+{
+    if (!isValid()) {
+        return DeliveryStatusUnknown;
+    }
+    return static_cast<DeliveryStatus>(uintOrZeroFromPart(mPriv->parts, 0, "delivery-status"));
+}
+
+/**
  * Default constructor, only used internally.
  */
 ReceivedMessage::ReceivedMessage()
@@ -416,6 +489,17 @@ ContactPtr ReceivedMessage::sender() const
 bool ReceivedMessage::isScrollback() const
 {
     return booleanFromPart(mPriv->parts, 0, "scrollback", false);
+}
+
+/**
+ * Return the details of a delivery report.
+ *
+ * \return The delivery report as a ReceivedMessage::DeliveryDetails object.
+ * \sa isDeliveryReport()
+ */
+ReceivedMessage::DeliveryDetails ReceivedMessage::deliveryDetails() const
+{
+    return DeliveryDetails(parts());
 }
 
 void ReceivedMessage::ut_setSender(const ContactPtr& sender)
