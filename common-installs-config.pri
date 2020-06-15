@@ -50,7 +50,7 @@ contains( TEMPLATE, app ) {
 #-----------------------------------------------------------------------------
 contains( TEMPLATE, lib ) {
 
-    target.path  = $${INSTALL_PREFIX}/lib
+    target.path  = $$[QT_INSTALL_LIBS]
     INSTALLS    += target
 
 
@@ -59,7 +59,7 @@ contains( TEMPLATE, lib ) {
     #-------------------------------------------------------------------------
     CONFIG *= create_prl create_pc
     pkgconfig.files  = $${TARGET}.pc
-    pkgconfig.path   = $${INSTALL_PREFIX}/lib/pkgconfig
+    pkgconfig.path   = $$[QT_INSTALL_LIBS]/pkgconfig
     INSTALLS        += pkgconfig
 
     # reset the .pc file's `prefix' variable

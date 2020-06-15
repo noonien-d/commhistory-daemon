@@ -2,9 +2,8 @@ Name:       commhistory-daemon
 Summary:    Communications event history database daemon
 Version:    0.8.13
 Release:    1
-Group:      Communications/Telephony and IM
 License:    LGPLv2.1
-URL:        https://git.merproject.org/mer-core/commhistory-daemon
+URL:        https://git.sailfishos.org/mer-core/commhistory-daemon
 Source0:    %{name}-%{version}.tar.bz2
 Source1:    %{name}.privileges
 BuildRequires:  pkgconfig(Qt5Core)
@@ -27,6 +26,7 @@ BuildRequires:  qt5-qttools-linguist
 BuildRequires:  libqofono-qt5-devel >= 0.89
 BuildRequires:  libqofonoext-devel
 BuildRequires:  python
+BuildRequires:  systemd
 Requires:  libcommhistory-qt5 >= 1.9.33
 Requires:  libqofono-qt5 >= 0.66
 Requires:  mapplauncherd-qt5
@@ -35,9 +35,6 @@ Obsoletes: smshistory <= 0.1.8
 Provides: smshistory > 0.1.8
 Obsoletes: voicecallhistory <= 0.1.5
 Provides: voicecallhistory > 0.1.5
-
-%{!?qtc_qmake5:%define qtc_qmake5 %qmake5}
-%{!?qtc_make:%define qtc_make make}
 
 %package tests
 Summary: Unit tests for %{name}
@@ -59,15 +56,15 @@ Daemon for logging communications (IM, SMS and call) in history database.
 
 %build
 unset LD_AS_NEEDED
-%qtc_qmake5
-%qtc_make %{?_smp_mflags}
+%qmake5
+make %{?_smp_mflags}
 
 %install
 rm -rf %{buildroot}
 %qmake5_install
 
-mkdir -p %{buildroot}%{_libdir}/systemd/user/user-session.target.wants
-ln -s ../commhistoryd.service %{buildroot}%{_libdir}/systemd/user/user-session.target.wants/
+mkdir -p %{buildroot}%{_userunitdir}/user-session.target.wants
+ln -s ../commhistoryd.service %{buildroot}%{_userunitdir}/user-session.target.wants/
 
 mkdir -p %{buildroot}%{_datadir}/mapplauncherd/privileges.d
 install -m 644 -p %{SOURCE1} %{buildroot}%{_datadir}/mapplauncherd/privileges.d
@@ -75,8 +72,8 @@ install -m 644 -p %{SOURCE1} %{buildroot}%{_datadir}/mapplauncherd/privileges.d
 %files
 %defattr(-,root,root,-)
 %{_bindir}/commhistoryd
-%{_libdir}/systemd/user/commhistoryd.service
-%{_libdir}/systemd/user/user-session.target.wants/commhistoryd.service
+%{_userunitdir}/commhistoryd.service
+%{_userunitdir}/user-session.target.wants/commhistoryd.service
 %{_datadir}/translations/*.qm
 %{_datadir}/lipstick/notificationcategories/*
 %{_datadir}/telepathy/clients/CommHistory.client
