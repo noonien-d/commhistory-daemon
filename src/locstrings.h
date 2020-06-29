@@ -61,6 +61,10 @@
 #define txt_qtn_msg_contact_card_label qtTrId("qtn_msg_contact_card_label")
 //% "%1 | %2"
 #define txt_qtn_msg_notification_new_vcard(STR) qtTrId("qtn_msg_received_contact_card").arg(txt_qtn_msg_contact_card_label).arg(STR)
+//% "Show Messages"
+#define txt_qtn_msg_notification_show_messages qtTrId("txt_qtn_msg_notification_show_messages")
+//% "Reply"
+#define txt_qtn_msg_notification_reply qtTrId("qtn_msg_notification_reply")
 //% "%n attachment(s)"
 #define txt_qtn_mms_notification_attachment(NUM) qtTrId("qtn_mms_notification_attachment", NUM)
 //% "%1 | %2"
@@ -75,9 +79,15 @@
 #define txt_qtn_call_type_private qtTrId("qtn_call_type_private")
 //% "Voicemail"
 #define txt_qtn_call_type_voicemail qtTrId("qtn_call_type_voicemail")
+//% "Show call history"
+#define txt_qtn_call_notification_show_call_history qtTrId("txt_qtn_call_notification_show_call_history")
 
 //% "Tap to listen"
 #define txt_qtn_voicemail_prompt qtTrId("qtn_voicemail_prompt")
+//% "Call voicemail"
+#define txt_qtn_voicemail_notification_call qtTrId("txt_qtn_voicemail_notification_call")
+//% "Show voicemail"
+#define txt_qtn_voicemail_notification_show_voicemail qtTrId("txt_qtn_voicemail_notification_show_voicemail")
 
 //% "Multimedia message was delivered to %1"
 #define txt_qtn_msg_notification_delivered(STR) qtTrId("qtn_mms_info_delivered").arg(STR)

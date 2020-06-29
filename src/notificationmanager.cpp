@@ -549,10 +549,10 @@ QString NotificationManager::notificationText(const CommHistory::Event& event, c
     return text;
 }
 
-static QVariant dbusAction(const QString &name, const QString &service, const QString &path, const QString &iface,
+static QVariant dbusAction(const QString &name, const QString &displayName, const QString &service, const QString &path, const QString &iface,
                            const QString &method, const QVariantList &arguments = QVariantList())
 {
-    return Notification::remoteAction(name, QString(), service, path, iface, method, arguments);
+    return Notification::remoteAction(name, displayName, service, path, iface, method, arguments);
 }
 
 void NotificationManager::setNotificationProperties(Notification *notification, PersonalNotification *pn, bool grouped)
@@ -564,12 +564,14 @@ void NotificationManager::setNotificationProperties(Notification *notification, 
 
             if (pn->eventType() != VOICEMAIL_SMS_EVENT_TYPE && grouped) {
                 remoteActions.append(dbusAction("default",
+                                                txt_qtn_msg_notification_show_messages,
                                                 MESSAGING_SERVICE_NAME,
                                                 OBJECT_PATH,
                                                 MESSAGING_INTERFACE,
                                                 SHOW_INBOX_METHOD));
             } else {
                 remoteActions.append(dbusAction("default",
+                                                txt_qtn_msg_notification_reply,
                                                 MESSAGING_SERVICE_NAME,
                                                 OBJECT_PATH,
                                                 MESSAGING_INTERFACE,
@@ -580,6 +582,7 @@ void NotificationManager::setNotificationProperties(Notification *notification, 
             }
 
             remoteActions.append(dbusAction("app",
+                                            QString(),
                                             MESSAGING_SERVICE_NAME,
                                             OBJECT_PATH,
                                             MESSAGING_INTERFACE,
@@ -589,12 +592,14 @@ void NotificationManager::setNotificationProperties(Notification *notification, 
         case PersonalNotification::Voice:
 
             remoteActions.append(dbusAction("default",
+                                            txt_qtn_call_notification_show_call_history,
                                             CALL_HISTORY_SERVICE_NAME,
                                             CALL_HISTORY_OBJECT_PATH,
                                             CALL_HISTORY_INTERFACE,
                                             CALL_HISTORY_METHOD,
                                             QVariantList() << CALL_HISTORY_PARAMETER));
             remoteActions.append(dbusAction("app",
+                                            QString(),
                                             CALL_HISTORY_SERVICE_NAME,
                                             CALL_HISTORY_OBJECT_PATH,
                                             CALL_HISTORY_INTERFACE,
@@ -605,11 +610,13 @@ void NotificationManager::setNotificationProperties(Notification *notification, 
         case PersonalNotification::Voicemail:
 
             remoteActions.append(dbusAction("default",
+                                            txt_qtn_voicemail_notification_show_voicemail,
                                             CALL_HISTORY_SERVICE_NAME,
                                             VOICEMAIL_OBJECT_PATH,
                                             VOICEMAIL_INTERFACE,
                                             VOICEMAIL_METHOD));
             remoteActions.append(dbusAction("app",
+                                            QString(),
                                             CALL_HISTORY_SERVICE_NAME,
                                             VOICEMAIL_OBJECT_PATH,
                                             VOICEMAIL_INTERFACE,
@@ -806,18 +813,21 @@ void NotificationManager::slotVoicemailWaitingChanged()
 
         voicemailNotification.setItemCount(voicemailCount);
 
+        QString displayName;
         QString service;
         QString path;
         QString iface;
         QString method;
         QVariantList args;
         if (!voicemailNumber.isEmpty()) {
+            displayName = txt_qtn_voicemail_notification_call;
             service = VOICEMAIL_WAITING_SERVICE;
             path = VOICEMAIL_WAITING_OBJECT_PATH;
             iface = VOICEMAIL_WAITING_INTERFACE;
             method = VOICEMAIL_WAITING_METHOD;
             args.append(QVariant(QVariantList() << QString(QStringLiteral("tel://")) + voicemailNumber));
         } else {
+            displayName = txt_qtn_call_notification_show_call_history;
             service = CALL_HISTORY_SERVICE_NAME;
             path = CALL_HISTORY_OBJECT_PATH;
             iface = CALL_HISTORY_INTERFACE;
@@ -825,8 +835,8 @@ void NotificationManager::slotVoicemailWaitingChanged()
             args.append(CALL_HISTORY_PARAMETER);
         }
 
-        voicemailNotification.setRemoteActions(QVariantList() << dbusAction("default", service, path, iface, method, args)
-                                                              << dbusAction("app", service, path, iface, method, args));
+        voicemailNotification.setRemoteActions(QVariantList() << dbusAction("default", displayName, service, path, iface, method, args)
+                                                              << dbusAction("app", QString(), service, path, iface, method, args));
 
         voicemailNotification.setReplacesId(currentId);
         voicemailNotification.publish();
