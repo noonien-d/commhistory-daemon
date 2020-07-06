@@ -118,8 +118,8 @@ PYTHON = python3
 MOC = $$TOOLS_DIR/mocwrapper.sh
 
 XINCLUDATOR = $$TOOLS_DIR/xincludator.py
-CONSTANTS_GEN = $$TOOLS_DIR/qt4-constants-gen.py
-CLIENT_GEN = $$TOOLS_DIR/qt4-client-gen.py
+CONSTANTS_GEN = $$TOOLS_DIR/qt-constants-gen.py
+CLIENT_GEN = $$TOOLS_DIR/qt-client-gen.py
 
 HEADERS += TpExtensions/connection.h \
            TpExtensions/Connection
