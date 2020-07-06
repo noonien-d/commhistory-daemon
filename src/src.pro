@@ -114,7 +114,7 @@ mmshandler.source_flags = -l MmsHandler
 EXTENSIONS_DIR = $$IN_PWD/TpExtensions
 EXTENSIONS_GENERATED_DIR = $$EXTENSIONS_DIR/.gen
 TOOLS_DIR = $$IN_PWD/../tools
-PYTHON = $$TOOLS_DIR/python.sh 2.6
+PYTHON = python3
 MOC = $$TOOLS_DIR/mocwrapper.sh
 
 XINCLUDATOR = $$TOOLS_DIR/xincludator.py

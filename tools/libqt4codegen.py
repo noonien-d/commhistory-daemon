@@ -21,7 +21,7 @@ please make any changes there.
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-from sys import maxint
+from sys import maxsize
 import re
 from libtpcodegen import get_by_path, get_descendant_text, NS_TP, xml_escape
 
@@ -70,11 +70,11 @@ def binding_from_usage(sig, tptype, custom_lists, external=False, explicit_own_n
     custom_type = False
     array_of = None
 
-    if natives.has_key(sig):
+    if sig in natives:
         typename, pass_by_ref, array_name = natives[sig]
         val = typename
         inarg = (pass_by_ref and ('const %s&' % val)) or val
-    elif sig[0] == 'a' and natives.has_key(sig[1]) and natives[sig[1]][2]:
+    elif sig[0] == 'a' and sig[1] in natives and natives[sig[1]][2]:
         val = natives[sig[1]][2]
         if explicit_own_ns:
             val = explicit_own_ns + '::' + val
@@ -97,7 +97,7 @@ def binding_from_usage(sig, tptype, custom_lists, external=False, explicit_own_n
                 extra_list_nesting += 1
                 tptype = tptype[:-2]
 
-            assert custom_lists.has_key(tptype), ('No array version of custom type %s in the spec, but array version used' % tptype)
+            assert tptype in custom_lists, ('No array version of custom type %s in the spec, but array version used' % tptype)
             val = custom_lists[tptype] + 'List' * extra_list_nesting
         else:
             val = tptype
@@ -148,8 +148,8 @@ def format_docstring(el, indent=' * ', brackets=None, maxwidth=80):
 
     if docstring_el.getAttribute('xmlns') == 'http://www.w3.org/1999/xhtml':
         splitted = ''.join([el.toxml() for el in docstring_el.childNodes]).strip(' ').strip('\n').split('\n')
-        level = min([not match and maxint or match.end() - 1 for match in [re.match('^ *[^ ]', line) for line in splitted]])
-        assert level != maxint
+        level = min([not match and maxsize or match.end() - 1 for match in [re.match('^ *[^ ]', line) for line in splitted]])
+        assert level != maxsize
         lines = [line[level:].replace('\\', '\\\\') for line in splitted]
     else:
         content = xml_escape(get_descendant_text(docstring_el).replace('\n', ' ').strip())
@@ -225,7 +225,7 @@ def gather_custom_lists(spec, typesns):
             custom_lists[tptype] = array_val
             custom_lists[ns + '::' + tptype] = ns + '::' + array_val
             if array_depth >= 2:
-                for i in xrange(array_depth):
+                for i in range(array_depth):
                     custom_lists[tptype + ('[]' * (i+1))] = (
                             array_val + ('List' * i))
                     custom_lists[ns + '::' + tptype + ('[]' * (i+1))] = (
