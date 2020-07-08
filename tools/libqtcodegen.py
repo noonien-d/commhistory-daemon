@@ -1,6 +1,6 @@
-"""Library code for Qt4 D-Bus-related code generation.
+"""Library code for Qt D-Bus-related code generation.
 
-The master copy of this library is in the telepathy-qt4 repository -
+The master copy of this library is in the telepathy-qt repository -
 please make any changes there.
 """
 
@@ -21,12 +21,12 @@ please make any changes there.
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-from sys import maxint
+from sys import maxsize
 import re
 from libtpcodegen import get_by_path, get_descendant_text, NS_TP, xml_escape
 
 
-class _Qt4TypeBinding:
+class _QtTypeBinding:
     def __init__(self, val, inarg, outarg, array_val, custom_type, array_of,
             array_depth=None):
         self.val = val
@@ -70,11 +70,11 @@ def binding_from_usage(sig, tptype, custom_lists, external=False, explicit_own_n
     custom_type = False
     array_of = None
 
-    if natives.has_key(sig):
+    if sig in natives:
         typename, pass_by_ref, array_name = natives[sig]
         val = typename
         inarg = (pass_by_ref and ('const %s&' % val)) or val
-    elif sig[0] == 'a' and natives.has_key(sig[1]) and natives[sig[1]][2]:
+    elif sig[0] == 'a' and sig[1] in natives and natives[sig[1]][2]:
         val = natives[sig[1]][2]
         if explicit_own_ns:
             val = explicit_own_ns + '::' + val
@@ -97,7 +97,7 @@ def binding_from_usage(sig, tptype, custom_lists, external=False, explicit_own_n
                 extra_list_nesting += 1
                 tptype = tptype[:-2]
 
-            assert custom_lists.has_key(tptype), ('No array version of custom type %s in the spec, but array version used' % tptype)
+            assert tptype in custom_lists, ('No array version of custom type %s in the spec, but array version used' % tptype)
             val = custom_lists[tptype] + 'List' * extra_list_nesting
         else:
             val = tptype
@@ -107,7 +107,7 @@ def binding_from_usage(sig, tptype, custom_lists, external=False, explicit_own_n
         assert False, 'Don\'t know how to map type (%s, %s)' % (sig, tptype)
 
     outarg = val + '&'
-    return _Qt4TypeBinding(val, inarg, outarg, None, custom_type, array_of)
+    return _QtTypeBinding(val, inarg, outarg, None, custom_type, array_of)
 
 def binding_from_decl(name, array_name, array_depth=None, external=False, explicit_own_ns=''):
     val = name.replace('_', '')
@@ -117,7 +117,7 @@ def binding_from_decl(name, array_name, array_depth=None, external=False, explic
         val = explicit_own_ns + '::' + val
     inarg = 'const %s&' % val
     outarg = '%s&' % val
-    return _Qt4TypeBinding(val, inarg, outarg, array_name.replace('_', ''), True, None, array_depth)
+    return _QtTypeBinding(val, inarg, outarg, array_name.replace('_', ''), True, None, array_depth)
 
 def extract_arg_or_member_info(els, custom_lists, externals, typesns, docstring_indent=' * ', docstring_brackets=None, docstring_maxwidth=80):
     names = []
@@ -125,7 +125,7 @@ def extract_arg_or_member_info(els, custom_lists, externals, typesns, docstring_
     bindings = []
 
     for el in els:
-        names.append(get_qt4_name(el))
+        names.append(get_qt_name(el))
         docstrings.append(format_docstring(el, docstring_indent, docstring_brackets, docstring_maxwidth))
 
         sig = el.getAttribute('type')
@@ -148,8 +148,8 @@ def format_docstring(el, indent=' * ', brackets=None, maxwidth=80):
 
     if docstring_el.getAttribute('xmlns') == 'http://www.w3.org/1999/xhtml':
         splitted = ''.join([el.toxml() for el in docstring_el.childNodes]).strip(' ').strip('\n').split('\n')
-        level = min([not match and maxint or match.end() - 1 for match in [re.match('^ *[^ ]', line) for line in splitted]])
-        assert level != maxint
+        level = min([not match and maxsize or match.end() - 1 for match in [re.match('^ *[^ ]', line) for line in splitted]])
+        assert level != maxsize
         lines = [line[level:].replace('\\', '\\\\') for line in splitted]
     else:
         content = xml_escape(get_descendant_text(docstring_el).replace('\n', ' ').strip())
@@ -225,7 +225,7 @@ def gather_custom_lists(spec, typesns):
             custom_lists[tptype] = array_val
             custom_lists[ns + '::' + tptype] = ns + '::' + array_val
             if array_depth >= 2:
-                for i in xrange(array_depth):
+                for i in range(array_depth):
                     custom_lists[tptype + ('[]' * (i+1))] = (
                             array_val + ('List' * i))
                     custom_lists[ns + '::' + tptype + ('[]' * (i+1))] = (
@@ -240,7 +240,7 @@ def get_headerfile_cmd(realinclude, prettyinclude, indent=' * '):
     else:
         return ''
 
-def get_qt4_name(el):
+def get_qt_name(el):
     name = el.getAttribute('name')
 
     if el.localName in ('method', 'signal', 'property'):
@@ -255,9 +255,9 @@ def get_qt4_name(el):
     if name[0].isupper() and name[1].islower():
         name = name[0].lower() + name[1:]
 
-    return qt4_identifier_escape(name.replace('_', ''))
+    return qt_identifier_escape(name.replace('_', ''))
 
-def qt4_identifier_escape(str):
+def qt_identifier_escape(str):
     built = (str[0].isdigit() and ['_']) or []
 
     for c in str:

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 #
 # Copyright (C) 2008 Collabora Limited <http://www.collabora.co.uk>
 # Copyright (C) 2008 Nokia Corporation
@@ -23,7 +23,7 @@ import xml.dom.minidom
 from getopt import gnu_getopt
 
 from libtpcodegen import NS_TP, get_descendant_text, get_by_path
-from libqt4codegen import format_docstring
+from libqtcodegen import format_docstring
 
 class Generator(object):
     def __init__(self, opts):
@@ -31,7 +31,7 @@ class Generator(object):
             self.namespace = opts['--namespace']
             self.must_define = opts.get('--must-define', None)
             dom = xml.dom.minidom.parse(opts['--specxml'])
-        except KeyError, k:
+        except KeyError as k:
             assert False, 'Missing required parameter %s' % k.args[0]
 
         self.define_prefix = None
@@ -46,7 +46,7 @@ class Generator(object):
         self.out = codecs.getwriter('utf-8')(stdout)
 
     def h(self, code):
-        self.out.write(code)
+        self.out.buffer.write(code.encode('utf-8'))
 
     def __call__(self):
         # Header

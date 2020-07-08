@@ -25,7 +25,7 @@ BuildRequires:  qt5-qttools
 BuildRequires:  qt5-qttools-linguist
 BuildRequires:  libqofono-qt5-devel >= 0.89
 BuildRequires:  libqofonoext-devel
-BuildRequires:  python
+BuildRequires:  python3-base
 BuildRequires:  systemd
 Requires:  libcommhistory-qt5 >= 1.9.33
 Requires:  libqofono-qt5 >= 0.66

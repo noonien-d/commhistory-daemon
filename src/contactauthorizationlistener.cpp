@@ -90,7 +90,7 @@ void ContactAuthorizationListener::slotConnectionReady(const Tp::ConnectionPtr& 
                 break;
             }
         }
-#else   // TODO: enable this back when tp-qt4 declares metatype for Tp::ConnectionPtr
+#else   // TODO: enable this back when tp-qt declares metatype for Tp::ConnectionPtr
         // and type Tp::Account::connection property
         QVariantMap filter;
         filter.insert(QLatin1String("connection"), QVariant::fromValue(connection));

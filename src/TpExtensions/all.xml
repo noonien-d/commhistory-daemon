@@ -2,7 +2,7 @@
   xmlns:tp="http://telepathy.freedesktop.org/wiki/DbusSpec#extensions-v0"
   xmlns:xi="http://www.w3.org/2001/XInclude">
 
-<tp:title>Commhistoryd telepathy-qt4 extensions</tp:title>
+<tp:title>Commhistoryd telepathy-qt extensions</tp:title>
 
 <xi:include href="connection.xml"/>
 

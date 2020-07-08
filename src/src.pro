@@ -114,12 +114,12 @@ mmshandler.source_flags = -l MmsHandler
 EXTENSIONS_DIR = $$IN_PWD/TpExtensions
 EXTENSIONS_GENERATED_DIR = $$EXTENSIONS_DIR/.gen
 TOOLS_DIR = $$IN_PWD/../tools
-PYTHON = $$TOOLS_DIR/python.sh 2.6
+PYTHON = python3
 MOC = $$TOOLS_DIR/mocwrapper.sh
 
 XINCLUDATOR = $$TOOLS_DIR/xincludator.py
-CONSTANTS_GEN = $$TOOLS_DIR/qt4-constants-gen.py
-CLIENT_GEN = $$TOOLS_DIR/qt4-client-gen.py
+CONSTANTS_GEN = $$TOOLS_DIR/qt-constants-gen.py
+CLIENT_GEN = $$TOOLS_DIR/qt-client-gen.py
 
 HEADERS += TpExtensions/connection.h \
            TpExtensions/Connection

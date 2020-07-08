@@ -1,4 +1,4 @@
-/* Generated from CommHistory telepathy-qt4 extensions
+/* Generated from CommHistory telepathy-qt extensions
  */
 
 #include <QFlags>
