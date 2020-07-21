@@ -2,6 +2,7 @@
 **
 ** This file is part of commhistory-daemon.
 **
+** Copyright (C) 2020 Open Mobile Platform LLC.
 ** Copyright (C) 2013-2016 Jolla Ltd.
 ** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** Contact: John Brooks <john.brooks@jolla.com>
@@ -809,7 +810,6 @@ void NotificationManager::slotVoicemailWaitingChanged()
         voicemailNotification.setPreviewBody(txt_qtn_voicemail_prompt);
 
         voicemailNotification.setSummary(voicemailNotification.previewSummary());
-        voicemailNotification.setBody(voicemailNotification.previewBody());
 
         voicemailNotification.setItemCount(voicemailCount);
 
