@@ -128,6 +128,8 @@ void PersonalNotification::publishNotification()
     m_notification->setHintValue("x-nemo-hidden", m_hidden);
     m_notification->setSummary(name);
     m_notification->setBody(notificationText());
+    m_notification->clearPreviewSummary();
+    m_notification->clearPreviewBody();
 
     NotificationManager::instance()->setNotificationProperties(m_notification, this, false);
 

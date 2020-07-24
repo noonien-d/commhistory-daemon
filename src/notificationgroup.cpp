@@ -158,6 +158,8 @@ void NotificationGroup::updateGroup()
         // group header ('missed calls' or 'new voicemails').
         mGroup->setBody(body);
     }
+    mGroup->clearPreviewSummary();
+    mGroup->clearPreviewBody();
     mGroup->setItemCount(mNotifications.size());
 
     // This group is only visible if the members are hidden
