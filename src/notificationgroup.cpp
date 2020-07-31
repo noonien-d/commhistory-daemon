@@ -2,7 +2,8 @@
 **
 ** This file is part of commhistory-daemon.
 **
-** Copyright (C) 2013 Jolla Ltd.
+** Copyright (C) 2020 Open Mobile Platform LLC.
+** Copyright (C) 2013 - 2019 Jolla Ltd.
 ** Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ** Contact: John Brooks <john.brooks@jolla.com>
 **
@@ -145,10 +146,20 @@ void NotificationGroup::updateGroup()
         connect(mGroup, SIGNAL(closed(uint)), SLOT(onClosed(uint)));
     }
 
+    const QString body(notificationGroupText());
+
     mGroup->setAppName(groupName(m_collection));
     mGroup->setCategory(groupCategory(m_collection));
     mGroup->setSummary(mLocale.joinStringList(contactNames()));
-    mGroup->setBody(notificationGroupText());
+    if (m_collection != PersonalNotification::Voice
+            && m_collection != PersonalNotification::Voicemail) {
+        // For missed calls and voicemail, the Events view notification is compressed into one
+        // line with only the summary, as the body information is duplicated in the notification
+        // group header ('missed calls' or 'new voicemails').
+        mGroup->setBody(body);
+    }
+    mGroup->clearPreviewSummary();
+    mGroup->clearPreviewBody();
     mGroup->setItemCount(mNotifications.size());
 
     // This group is only visible if the members are hidden
@@ -186,7 +197,7 @@ void NotificationGroup::updateGroup()
         preview.setAppName(mGroup->appName());
         preview.setCategory(mGroup->category() + QStringLiteral(".preview"));
         preview.setPreviewSummary(mGroup->summary());
-        preview.setPreviewBody(mGroup->body());
+        preview.setPreviewBody(body);
 
         NotificationManager::instance()->setNotificationProperties(&preview, mNotifications[0], grouped);
 
