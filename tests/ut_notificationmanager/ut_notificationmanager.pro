@@ -37,12 +37,10 @@ TARGET = ut_notificationmanager
 PKGCONFIG += mlocale5 TelepathyQt5 ngf-qt5 nemonotifications-qt5
 
 TEST_SOURCES += $$COMMHISTORYDSRCDIR/notificationmanager.cpp \
-                $$COMMHISTORYDSRCDIR/notificationgroup.cpp \
                 $$COMMHISTORYDSRCDIR/personalnotification.cpp \
                 $$COMMHISTORYDSRCDIR/serialisable.cpp \
                 $$COMMHISTORYDSRCDIR/commhistoryservice.cpp
 TEST_HEADERS += $$COMMHISTORYDSRCDIR/notificationmanager.h \
-                $$COMMHISTORYDSRCDIR/notificationgroup.h \
                 $$COMMHISTORYDSRCDIR/personalnotification.h \
                 $$COMMHISTORYDSRCDIR/serialisable.h \
                 $$COMMHISTORYDSRCDIR/commhistoryservice.h

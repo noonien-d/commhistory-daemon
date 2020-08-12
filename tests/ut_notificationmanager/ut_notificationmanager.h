@@ -57,7 +57,6 @@ private:
 
     CommHistory::Event createEvent(CommHistory::Event::EventType type, const QString &remoteUid, const QString &localUid);
     PersonalNotification *getNotification(const CommHistory::Event &event);
-    NotificationGroup *getGroup(const CommHistory::Event &event);
 };
 
 }

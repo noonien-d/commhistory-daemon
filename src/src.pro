@@ -57,7 +57,6 @@ HEADERS += logger.h \
            loggerclientobserver.h \
            notificationmanager.h \
            serialisable.h \
-           notificationgroup.h \
            personalnotification.h \
            commhistoryifadaptor.h \
            commhistoryservice.h \
@@ -86,7 +85,6 @@ SOURCES += main.cpp \
            loggerclientobserver.cpp \
            notificationmanager.cpp \
            serialisable.cpp \
-           notificationgroup.cpp \
            personalnotification.cpp \
            commhistoryifadaptor.cpp \
            commhistoryservice.cpp \
