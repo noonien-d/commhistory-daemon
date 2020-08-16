@@ -98,6 +98,7 @@ SOURCES += main.cpp \
            lastdialedcache.cpp \
            fscleanup.cpp \
            mmshandler.cpp \
+           mmspart.cpp \
            messagehandlerbase.cpp \
            smartmessaging.cpp
 
