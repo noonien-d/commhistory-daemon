@@ -46,7 +46,6 @@
 
 // our includes
 #include "commhistoryservice.h"
-#include "notificationgroup.h"
 #include "personalnotification.h"
 
 namespace Ngf {
@@ -67,20 +66,6 @@ class NotificationManager : public QObject
 
 public:
     typedef CommHistory::RecipientList RecipientList;
-
-    struct EventGroupProperties {
-        PersonalNotification::EventCollection collection;
-        CommHistory::Recipient recipient;
-
-        bool operator== (const EventGroupProperties &other) const { return (collection == other.collection && recipient.matches(other.recipient)); }
-    };
-
-    static EventGroupProperties eventGroup(PersonalNotification::EventCollection c, const CommHistory::Recipient &recipient) {
-        EventGroupProperties properties;
-        properties.collection = c;
-        properties.recipient = recipient;
-        return properties;
-    }
 
     /*!
      *  \param QObject parent object
@@ -166,8 +151,6 @@ private:
 
     void syncNotifications();
     int pendingEventCount();
-    void clearPendingEvents(const NotificationGroup &group);
-    void removeNotPendingEvents(const NotificationGroup &group);
 
     bool isFilteredInbox();
     QString filteredInboxAccountPath();
@@ -178,9 +161,9 @@ private:
 
 private:
     static NotificationManager* m_pInstance;
-    QHash<EventGroupProperties, NotificationGroup*> m_Groups;
     bool m_Initialised;
 
+    QList<PersonalNotification*> m_notifications;
     QList<PersonalNotification*> m_unresolvedNotifications;
 
     CommHistory::ContactResolver *m_contactResolver;
@@ -197,15 +180,6 @@ private:
     friend class Ut_NotificationManager;
 #endif
 };
-
-inline uint qHash(const NotificationManager::EventGroupProperties &properties, uint seed)
-{
-    using ::qHash;
-    // EventGroups are ultimately equivalent by the contacts they resolve to, so we should use
-    // contact ID as the hash differentiator.  UID pairs that do not resolve to a contact will
-    // therefore all hash to the same value, which will be inefficient, but work correctly
-    return qHash(properties.collection, seed) ^ qHash(properties.recipient.contactId(), seed);
-}
 
 } // namespace RTComLogger
 
