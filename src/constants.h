@@ -55,10 +55,10 @@ namespace RTComLogger {
 #define VOICEMAIL_METHOD       QLatin1String("voicemail")
 #define REPLACE_TYPE           QLatin1String("sms-replace-number")
 
-#define VOICEMAIL_WAITING_SERVICE      QLatin1String("com.jolla.voicecall.ui")
-#define VOICEMAIL_WAITING_OBJECT_PATH  QLatin1String("/")
-#define VOICEMAIL_WAITING_INTERFACE    QLatin1String("com.jolla.voicecall.ui")
-#define VOICEMAIL_WAITING_METHOD       QLatin1String("openUrl")
+#define VOICECALL_SERVICE      QLatin1String("com.jolla.voicecall.ui")
+#define VOICECALL_OBJECT_PATH  QLatin1String("/")
+#define VOICECALL_INTERFACE    QLatin1String("com.jolla.voicecall.ui")
+#define VOICECALL_DIAL_METHOD  QLatin1String("dial")
 
 // Custom hints for identifying notifications
 #define ACCOUNT_PATH_HINT   QLatin1String("x-org-nemomobile-qmlmessages.account.path")
