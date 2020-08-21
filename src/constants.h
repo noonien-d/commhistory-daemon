@@ -24,10 +24,6 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
-#include <CommHistory/Event>
-
-namespace RTComLogger {
-
 // Used to generate duiremoteaction strings
 #define OBJECT_PATH QLatin1String("/")
 
@@ -95,31 +91,5 @@ namespace RTComLogger {
 #define VOICEMAIL_CONTACT_VMID_MAIN QLatin1String("/dev/shm")
 #define VOICEMAIL_CONTACT_VMID_DIR  QLatin1String("contacts")
 #define VOICEMAIL_CONTACT_VMID_FILE QLatin1String("vmid")
-
-// events
-struct EventTypes {
-    int type;
-    const char* event;
-};
-
-static const EventTypes _eventTypes[] =
-{
-    {CommHistory::Event::IMEvent,       "x-nemo.messaging.im"},
-    {CommHistory::Event::SMSEvent,      "x-nemo.messaging.sms"},
-    {CommHistory::Event::MMSEvent,      "x-nemo.messaging.mms"},
-    {CommHistory::Event::CallEvent,     "x-nemo.call.missed"},
-    {CommHistory::Event::VoicemailEvent,"x-nemo.messaging.voicemail"},
-    {VOICEMAIL_SMS_EVENT_TYPE,          "x-nemo.messaging.voicemail-SMS"}
-};
-
-static const int _eventTypesCount = sizeof(_eventTypes) / sizeof(EventTypes);
-
-// Custom system info notification types for commhistoryd:
-const QString ErrorCategory = "x-nemo.messaging.error";
-const QString StrongErrorCategory = "x-nemo.messaging.error.strong";
-
-const QString voicemailWaitingCategory = "x-nemo.messaging.voicemail-waiting";
-
-}
 
 #endif //#define CONSTANTS_H

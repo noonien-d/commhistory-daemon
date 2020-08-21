@@ -33,6 +33,24 @@
 using namespace RTComLogger;
 using namespace CommHistory;
 
+// events
+struct EventTypes {
+    int type;
+    const char* event;
+};
+
+static const EventTypes _eventTypes[] =
+{
+    {CommHistory::Event::IMEvent,       "x-nemo.messaging.im"},
+    {CommHistory::Event::SMSEvent,      "x-nemo.messaging.sms"},
+    {CommHistory::Event::MMSEvent,      "x-nemo.messaging.mms"},
+    {CommHistory::Event::CallEvent,     "x-nemo.call.missed"},
+    {CommHistory::Event::VoicemailEvent,"x-nemo.messaging.voicemail"},
+    {VOICEMAIL_SMS_EVENT_TYPE,          "x-nemo.messaging.voicemail-SMS"}
+};
+
+static const int _eventTypesCount = sizeof(_eventTypes) / sizeof(EventTypes);
+
 static QString groupType(int eventType)
 {
     for (int i = 0; i < _eventTypesCount; i++) {

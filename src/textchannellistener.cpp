@@ -116,6 +116,8 @@ QTCONTACTS_USE_NAMESPACE
 QTVERSIT_USE_NAMESPACE
 
 namespace {
+const QString ErrorCategory = "x-nemo.messaging.error";
+const QString StrongErrorCategory = "x-nemo.messaging.error.strong";
 
 CommHistory::Event::PropertySet deliveryHandlingProperties = CommHistory::Event::PropertySet()
                                                  << CommHistory::Event::Id
@@ -195,6 +197,18 @@ uint pendingId(const Tp::ReceivedMessage &message)
 QString subscriberIdentity(const Tp::MessagePart &header)
 {
     return partValue<QString>(header, SUBSCRIBER_IDENTITY_HEADER_KEY);
+}
+
+void showErrorNote(const QString &errorMsg, const QString &category = ErrorCategory)
+{
+    if (!errorMsg.isEmpty()) {
+        Notification notification;
+        notification.setAppName(txt_qtn_msg_errors_group);
+        notification.setCategory(category);
+        notification.setBody(errorMsg);
+        notification.setPreviewBody(errorMsg);
+        notification.publish();
+    }
 }
 
 } // anonymous namespace
@@ -1117,18 +1131,6 @@ void TextChannelListener::handleMessageFailed(const Tp::ReceivedMessage &message
             DEBUG() << "error message shown to user:" << errorMsgToUser;
             showErrorNote(errorMsgToUser, category);
         }
-    }
-}
-
-void TextChannelListener::showErrorNote(const QString &errorMsg, const QString &category)
-{
-    if (!errorMsg.isEmpty()) {
-        Notification notification;
-        notification.setAppName(txt_qtn_msg_errors_group);
-        notification.setCategory(category);
-        notification.setBody(errorMsg);
-        notification.setPreviewBody(errorMsg);
-        notification.publish();
     }
 }
 
