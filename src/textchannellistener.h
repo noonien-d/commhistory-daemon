@@ -146,7 +146,6 @@ private:
     void handleMessageFailed(const Tp::ReceivedMessage &message,
                              const CommHistory::Event &event);
     void sendGroupChatEvent(const QString &message);
-    void showErrorNote(const QString &errorMsg, const QString &category = ErrorCategory);
     void updateCurrentGroup(int start, int end, const QModelIndex &parent = QModelIndex());
 
     // attempt to read original message from delivery report

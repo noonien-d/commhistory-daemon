@@ -58,6 +58,7 @@ NotificationManager* NotificationManager::m_pInstance = 0;
 
 static const QString NgfdEventSms("sms");
 static const QString NgfdEventChat("chat");
+static const QString voicemailWaitingCategory = "x-nemo.messaging.voicemail-waiting";
 
 // constructor
 //
