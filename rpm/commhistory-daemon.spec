@@ -20,7 +20,7 @@ BuildRequires:  pkgconfig(mlocale5)
 BuildRequires:  pkgconfig(mce)
 BuildRequires:  pkgconfig(ngf-qt5)
 BuildRequires:  pkgconfig(qt5-boostable)
-BuildRequires:  pkgconfig(nemonotifications-qt5) >= 1.0.5
+BuildRequires:  pkgconfig(nemonotifications-qt5) >= 1.2.2
 BuildRequires:  qt5-qttools
 BuildRequires:  qt5-qttools-linguist
 BuildRequires:  libqofono-qt5-devel >= 0.89
@@ -30,6 +30,7 @@ BuildRequires:  systemd
 Requires:  libcommhistory-qt5 >= 1.9.33
 Requires:  libqofono-qt5 >= 0.66
 Requires:  mapplauncherd-qt5
+Requires:  nemo-qml-plugin-notifications-qt5 >= 1.2.2
 
 Obsoletes: smshistory <= 0.1.8
 Provides: smshistory > 0.1.8
