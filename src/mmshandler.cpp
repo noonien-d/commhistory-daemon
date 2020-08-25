@@ -2,8 +2,8 @@
 **
 ** This file is part of commhistory-daemon.
 **
-** Copyright (C) 2014-2017 Jolla Ltd.
-** Contact: Slava Monich <slava.monich@jolla.com>
+** Copyright (C) 2014-2020 Jolla Ltd.
+** Copyright (C) 2020 Open Mobile Platform LLC.
 **
 ** This library is free software; you can redistribute it and/or modify it
 ** under the terms of the GNU Lesser General Public License version 2.1 as
@@ -85,7 +85,9 @@ MmsHandler::MmsHandler(QObject* parent)
     , m_imsiSettings(new MDConfGroup("/imsi", this))
 {
     qDBusRegisterMetaType<MmsPart>();
+    qDBusRegisterMetaType<MmsPartFd>();
     qDBusRegisterMetaType<MmsPartList>();
+    qDBusRegisterMetaType<MmsPartFdList>();
     qDBusRegisterMetaType<QList<CommHistory::Event> >();
 
     QOfonoManager* ofonoManager = m_ofonoManager.data();
@@ -776,10 +778,15 @@ void MmsHandler::sendMessageFromEvent(int eventId)
 
 Event::EventStatus MmsHandler::sendMessageFromEvent(Event &event)
 {
-    MmsPartList parts;
+    MmsPartFdList parts;
     foreach (const MessagePart &part, event.messageParts()) {
-        MmsPart p = { part.path(), part.contentType(), part.contentId() };
-        parts.append(p);
+        MmsPartFd p(part.path(), part.contentType(), part.contentId());
+        if (p.file.isOpen()) {
+            parts.append(p);
+        } else {
+            qWarning() << "Failed to open" << part.path();
+            return Event::TemporarilyFailedStatus;
+        }
     }
 
     QString imsi = event.subscriberIdentity();
@@ -795,7 +802,7 @@ Event::EventStatus MmsHandler::sendMessageFromEvent(Event &event)
 
         m_activeEvents.insert(getModemPath(imsi), event.id());
 
-        QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(callEngine("sendMessage", args), this);
+        QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(callEngine("sendMessageFd", args), this);
         watcher->setProperty(kCallPropertyEventId, event.id());
         connect(watcher, SIGNAL(finished(QDBusPendingCallWatcher*)), SLOT(onSendMessageFinished(QDBusPendingCallWatcher*)));
         return Event::SendingStatus;
