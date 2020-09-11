@@ -165,6 +165,7 @@ void PersonalNotification::publishNotification()
     m_notification->setHintValue("x-commhistoryd-data", serialized().toBase64());
     m_notification->setSummary(name);
     m_notification->setBody(notificationText());
+    m_notification->setIcon(m_recipient.contactAvatarUrl().toString());
 
     NotificationManager::instance()->setNotificationProperties(m_notification, this, false);
 
