@@ -86,6 +86,29 @@ private:
 class ReceivedMessage : public Message
 {
 public:
+    class DeliveryDetails
+    {
+    public:
+        DeliveryDetails();
+        DeliveryDetails(const DeliveryDetails &other);
+        ~DeliveryDetails();
+
+        DeliveryDetails &operator=(const DeliveryDetails &other);
+
+        bool isValid() const { return mPriv.constData() != nullptr; }
+
+        DeliveryStatus status() const;
+
+    private:
+        friend class ReceivedMessage;
+
+        DeliveryDetails(const MessagePartList &parts);
+
+        struct Private;
+        friend struct Private;
+        QSharedDataPointer<Private> mPriv;
+    };
+
     ReceivedMessage(const MessagePartList &parts);
     ReceivedMessage();
 
@@ -96,6 +119,9 @@ public:
     QDateTime received() const;
     ContactPtr sender() const;
     bool isScrollback() const;
+    bool isSilent() const;
+
+    DeliveryDetails deliveryDetails() const;
 
 public: //ut
     void ut_setSender(const ContactPtr& sender);

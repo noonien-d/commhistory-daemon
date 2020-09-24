@@ -29,23 +29,52 @@
 namespace Tp
 {
 
+namespace
+{
+
+QVariant valueFromPart(const MessagePartList &parts, uint index, const char *key)
+{
+    return parts.at(index).value(QLatin1String(key)).variant();
+}
+
+uint uintOrZeroFromPart(const MessagePartList &parts, uint index, const char *key)
+{
+    return valueFromPart(parts, index, key).toUInt();
+}
+
+QString stringOrEmptyFromPart(const MessagePartList &parts, uint index, const char *key)
+{
+    QString s = valueFromPart(parts, index, key).toString();
+    if (s.isNull()) {
+        s = QLatin1String("");
+    }
+    return s;
+}
+
+bool booleanFromPart(const MessagePartList &parts, uint index, const char *key,
+            bool assumeIfAbsent)
+{
+    QVariant v = valueFromPart(parts, index, key);
+    if (v.isValid() && v.type() == QVariant::Bool) {
+        return v.toBool();
+    }
+    return assumeIfAbsent;
+}
+
+}
+
 struct Message::Private : public QSharedData
 {
     Private(const MessagePartList &parts);
     ~Private();
 
+    uint senderHandle() const;
+    uint pendingId() const;
+    void clearSenderHandle();
+
     MessagePartList parts;
 
     ContactPtr sender;
-
-    inline QVariant value(uint index, const char *key) const;
-    inline uint getUIntOrZero(uint index, const char *key) const;
-    inline QString getStringOrEmpty(uint index, const char *key) const;
-    inline bool getBoolean(uint index, const char *key,
-            bool assumeIfAbsent) const;
-    inline uint senderHandle() const;
-    inline uint pendingId() const;
-    void clearSenderHandle();
 };
 
 Message::Private::Private(const MessagePartList &parts)
@@ -58,40 +87,9 @@ Message::Private::~Private()
 {
 }
 
-inline QVariant Message::Private::value(uint index, const char *key) const
-{
-    return parts.at(index).value(QLatin1String(key)).variant();
-}
-
-inline QString Message::Private::getStringOrEmpty(uint index, const char *key)
-    const
-{
-    QString s = value(index, key).toString();
-    if (s.isNull()) {
-        s = QLatin1String("");
-    }
-    return s;
-}
-
-inline uint Message::Private::getUIntOrZero(uint index, const char *key)
-    const
-{
-    return value(index, key).toUInt();
-}
-
-inline bool Message::Private::getBoolean(uint index, const char *key,
-        bool assumeIfAbsent) const
-{
-    QVariant v = value(index, key);
-    if (v.isValid() && v.type() == QVariant::Bool) {
-        return v.toBool();
-    }
-    return assumeIfAbsent;
-}
-
 inline uint Message::Private::senderHandle() const
 {
-    return getUIntOrZero(0, "message-sender");
+    return uintOrZeroFromPart(parts, 0, "message-sender");
 }
 
 /**
@@ -203,7 +201,7 @@ Message::~Message()
 QDateTime Message::sent() const
 {
     // FIXME See http://bugs.freedesktop.org/show_bug.cgi?id=21690
-    uint stamp = mPriv->value(0, "message-sent").toUInt();
+    uint stamp = valueFromPart(mPriv->parts, 0, "message-sent").toUInt();
     if (stamp != 0) {
         return QDateTime::fromTime_t(stamp);
     } else {
@@ -219,7 +217,7 @@ QDateTime Message::sent() const
  */
 ChannelTextMessageType Message::messageType() const
 {
-    uint raw = mPriv->value(0, "message-type").toUInt();
+    uint raw = valueFromPart(mPriv->parts, 0, "message-type").toUInt();
 
     if (raw < static_cast<uint>(NUM_CHANNEL_TEXT_MESSAGE_TYPES)) {
         return ChannelTextMessageType(raw);
@@ -236,7 +234,7 @@ ChannelTextMessageType Message::messageType() const
  */
 QString Message::messageToken() const
 {
-    return mPriv->getStringOrEmpty(0, "message-token");
+    return stringOrEmptyFromPart(mPriv->parts, 0, "message-token");
 }
 
 QString Message::text() const
@@ -246,8 +244,8 @@ QString Message::text() const
     QString text;
 
     for (int i = 1; i < size(); i++) {
-        QString altGroup = mPriv->getStringOrEmpty(i, "alternative");
-        QString contentType = mPriv->getStringOrEmpty(i, "content-type");
+        QString altGroup = stringOrEmptyFromPart(mPriv->parts, i, "alternative");
+        QString contentType = stringOrEmptyFromPart(mPriv->parts, i, "content-type");
 
         if (contentType == QLatin1String("text/plain")) {
             if (!altGroup.isEmpty()) {
@@ -258,7 +256,7 @@ QString Message::text() const
                 }
             }
 
-            QVariant content = mPriv->value(i, "content");
+            QVariant content = valueFromPart(mPriv->parts, i, "content");
             if (content.type() == QVariant::String) {
                 text += content.toString();
             } else {
@@ -329,6 +327,79 @@ MessagePart& Message::ut_part(uint index)
  */
 
 /**
+ * \class ReceivedMessage::DeliveryDetails
+ * \ingroup clientchannel
+ * \headerfile TelepathyQt/message.h <TelepathyQt/ReceivedMessage>
+ *
+ * \brief The ReceivedMessage::DeliveryDetails class represents the details of a delivery report.
+ */
+
+struct ReceivedMessage::DeliveryDetails::Private : public QSharedData
+{
+    Private(const MessagePartList &parts)
+        : parts(parts)
+    {
+    }
+
+    MessagePartList parts;
+};
+
+/**
+ * Default constructor.
+ */
+ReceivedMessage::DeliveryDetails::DeliveryDetails()
+{
+}
+
+/**
+ * Copy constructor.
+ */
+ReceivedMessage::DeliveryDetails::DeliveryDetails(const DeliveryDetails &other)
+    : mPriv(other.mPriv)
+{
+}
+
+/**
+ * Construct a new ReceivedMessage::DeliveryDetails object.
+ *
+ * \param The message parts.
+ */
+ReceivedMessage::DeliveryDetails::DeliveryDetails(const MessagePartList &parts)
+    : mPriv(new Private(parts))
+{
+}
+
+/**
+ * Class destructor.
+ */
+ReceivedMessage::DeliveryDetails::~DeliveryDetails()
+{
+}
+
+/**
+ * Assignment operator.
+ */
+ReceivedMessage::DeliveryDetails &ReceivedMessage::DeliveryDetails::operator=(
+        const DeliveryDetails &other)
+{
+    this->mPriv = other.mPriv;
+    return *this;
+}
+
+/**
+ * Return the delivery status of a message.
+ *
+ * \return The delivery status as #DeliveryStatus.
+ */
+DeliveryStatus ReceivedMessage::DeliveryDetails::status() const
+{
+    if (!isValid()) {
+        return DeliveryStatusUnknown;
+    }
+    return static_cast<DeliveryStatus>(uintOrZeroFromPart(mPriv->parts, 0, "delivery-status"));
+}
+
+/**
  * Default constructor, only used internally.
  */
 ReceivedMessage::ReceivedMessage()
@@ -386,7 +457,7 @@ ReceivedMessage::~ReceivedMessage()
 QDateTime ReceivedMessage::received() const
 {
     // FIXME See http://bugs.freedesktop.org/show_bug.cgi?id=21690
-    uint stamp = mPriv->value(0, "message-received").toUInt();
+    uint stamp = valueFromPart(mPriv->parts, 0, "message-received").toUInt();
     if (stamp != 0) {
         return QDateTime::fromTime_t(stamp);
     } else {
@@ -417,7 +488,30 @@ ContactPtr ReceivedMessage::sender() const
  */
 bool ReceivedMessage::isScrollback() const
 {
-    return mPriv->getBoolean(0, "scrollback", false);
+    return booleanFromPart(mPriv->parts, 0, "scrollback", false);
+}
+
+/**
+ * Return whether the incoming message should trigger a user notification.
+ *
+ * If \c true, UI should not notify the user about this message.
+ *
+ * \return \c true if the silent flag is set, \c false otherwise.
+ */
+bool ReceivedMessage::isSilent() const
+{
+    return booleanFromPart(mPriv->parts, 0, "silent", false);
+}
+
+/**
+ * Return the details of a delivery report.
+ *
+ * \return The delivery report as a ReceivedMessage::DeliveryDetails object.
+ * \sa isDeliveryReport()
+ */
+ReceivedMessage::DeliveryDetails ReceivedMessage::deliveryDetails() const
+{
+    return DeliveryDetails(parts());
 }
 
 void ReceivedMessage::ut_setSender(const ContactPtr& sender)

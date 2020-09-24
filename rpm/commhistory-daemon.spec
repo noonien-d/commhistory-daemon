@@ -14,7 +14,7 @@ BuildRequires:  pkgconfig(Qt5Test)
 BuildRequires:  pkgconfig(commhistory-qt5) >= 1.10.2
 BuildRequires:  pkgconfig(contactcache-qt5)
 BuildRequires:  pkgconfig(qtcontacts-sqlite-qt5-extensions)
-BuildRequires:  pkgconfig(TelepathyQt5)
+BuildRequires:  pkgconfig(TelepathyQt5) >= 0.9.8
 BuildRequires:  pkgconfig(mlite5)
 BuildRequires:  pkgconfig(mlocale5)
 BuildRequires:  pkgconfig(mce)
