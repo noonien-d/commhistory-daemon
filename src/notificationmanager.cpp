@@ -633,29 +633,34 @@ void NotificationManager::setNotificationProperties(Notification *notification, 
             if (pn->eventType() == CommHistory::Event::IMEvent
                     || pn->eventType() == CommHistory::Event::SMSEvent
                     || pn->eventType() == CommHistory::Event::MMSEvent) {
-                // Named action: "Reply"
-                remoteActions.append(dbusAction(QString(),
-                                                txt_qtn_msg_notification_reply,
-                                                MESSAGING_SERVICE_NAME,
-                                                OBJECT_PATH,
-                                                MESSAGING_INTERFACE,
-                                                START_CONVERSATION_METHOD,
-                                                QVariantList() << pn->account()
-                                                               << pn->targetId()
-                                                               << true));
+
+                if (pn->eventType() == CommHistory::Event::IMEvent || pn->hasPhoneNumber()) {
+                    // Named action: "Reply"
+                    remoteActions.append(dbusAction(QString(),
+                                                    txt_qtn_msg_notification_reply,
+                                                    MESSAGING_SERVICE_NAME,
+                                                    OBJECT_PATH,
+                                                    MESSAGING_INTERFACE,
+                                                    START_CONVERSATION_METHOD,
+                                                    QVariantList() << pn->account()
+                                                                   << pn->targetId()
+                                                                   << true));
+                }
             }
 
             if (pn->eventType() == CommHistory::Event::SMSEvent
                     || pn->eventType() == CommHistory::Event::MMSEvent
                     || pn->eventType() == VOICEMAIL_SMS_EVENT_TYPE) {
-                // Named action: "Call"
-                remoteActions.append(dbusAction(QString(),
-                                                txt_qtn_msg_notification_call,
-                                                VOICECALL_SERVICE,
-                                                VOICECALL_OBJECT_PATH,
-                                                VOICECALL_INTERFACE,
-                                                VOICECALL_DIAL_METHOD,
-                                                QVariantList() << pn->remoteUid()));
+                if (pn->hasPhoneNumber()) {
+                    // Named action: "Call"
+                    remoteActions.append(dbusAction(QString(),
+                                                    txt_qtn_msg_notification_call,
+                                                    VOICECALL_SERVICE,
+                                                    VOICECALL_OBJECT_PATH,
+                                                    VOICECALL_INTERFACE,
+                                                    VOICECALL_DIAL_METHOD,
+                                                    QVariantList() << pn->remoteUid()));
+                }
             }
 
             break;
@@ -679,23 +684,25 @@ void NotificationManager::setNotificationProperties(Notification *notification, 
                                             CALL_HISTORY_METHOD,
                                             QVariantList() << CALL_HISTORY_PARAMETER));
 
-            remoteActions.append(dbusAction(QString(),
-                                            txt_qtn_call_notification_call_back,
-                                            VOICECALL_SERVICE,
-                                            VOICECALL_OBJECT_PATH,
-                                            VOICECALL_INTERFACE,
-                                            VOICECALL_DIAL_METHOD,
-                                            QVariantList() << pn->remoteUid()));
+            if (pn->hasPhoneNumber()) {
+                remoteActions.append(dbusAction(QString(),
+                                                txt_qtn_call_notification_call_back,
+                                                VOICECALL_SERVICE,
+                                                VOICECALL_OBJECT_PATH,
+                                                VOICECALL_INTERFACE,
+                                                VOICECALL_DIAL_METHOD,
+                                                QVariantList() << pn->remoteUid()));
 
-            remoteActions.append(dbusAction(QString(),
-                                            txt_qtn_call_notification_send_message,
-                                            MESSAGING_SERVICE_NAME,
-                                            OBJECT_PATH,
-                                            MESSAGING_INTERFACE,
-                                            START_CONVERSATION_METHOD,
-                                            QVariantList() << pn->account()
-                                                           << pn->targetId()
-                                                           << true));
+                remoteActions.append(dbusAction(QString(),
+                                                txt_qtn_call_notification_send_message,
+                                                MESSAGING_SERVICE_NAME,
+                                                OBJECT_PATH,
+                                                MESSAGING_INTERFACE,
+                                                START_CONVERSATION_METHOD,
+                                                QVariantList() << pn->account()
+                                                << pn->targetId()
+                                                << true));
+            }
 
             break;
 
