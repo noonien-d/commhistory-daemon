@@ -297,6 +297,14 @@ bool PersonalNotification::hidden() const
     return false;
 }
 
+bool PersonalNotification::hasPhoneNumber() const
+{
+    if (m_eventType == CommHistory::Event::SMSEvent || m_eventType == CommHistory::Event::MMSEvent || m_eventType == VOICEMAIL_SMS_EVENT_TYPE) {
+        return CommHistory::normalizePhoneNumber(m_remoteUid, true).length() > 0;
+    }
+    return false;
+}
+
 void PersonalNotification::setRemoteUid(const QString& remoteUid)
 {
     if (m_remoteUid != remoteUid) {

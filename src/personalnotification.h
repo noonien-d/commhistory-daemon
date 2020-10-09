@@ -116,6 +116,8 @@ public:
     QDateTime timestamp() const;
     bool hidden() const;
 
+    bool hasPhoneNumber() const;
+
     void setRemoteUid(const QString& remoteUid);
     void setAccount(const QString& account);
     void setEventType(uint eventType);
