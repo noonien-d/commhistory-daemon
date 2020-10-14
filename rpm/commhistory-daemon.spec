@@ -2,7 +2,7 @@ Name:       commhistory-daemon
 Summary:    Communications event history database daemon
 Version:    0.8
 Release:    1
-License:    LGPLv2.1
+License:    LGPLv2
 URL:        https://git.sailfishos.org/mer-core/commhistory-daemon
 Source0:    %{name}-%{version}.tar.bz2
 Source1:    %{name}.privileges
@@ -72,6 +72,7 @@ install -m 644 -p %{SOURCE1} %{buildroot}%{_datadir}/mapplauncherd/privileges.d
 
 %files
 %defattr(-,root,root,-)
+%license LICENSE
 %{_bindir}/commhistoryd
 %{_userunitdir}/commhistoryd.service
 %{_userunitdir}/user-session.target.wants/commhistoryd.service
