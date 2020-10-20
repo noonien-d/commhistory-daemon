@@ -299,10 +299,15 @@ bool PersonalNotification::hidden() const
 
 bool PersonalNotification::hasPhoneNumber() const
 {
-    if (m_eventType == CommHistory::Event::SMSEvent || m_eventType == CommHistory::Event::MMSEvent || m_eventType == VOICEMAIL_SMS_EVENT_TYPE) {
+    switch (m_eventType) {
+    case CommHistory::Event::SMSEvent:
+    case CommHistory::Event::MMSEvent:
+    case CommHistory::Event::CallEvent:
+    case VOICEMAIL_SMS_EVENT_TYPE:
         return CommHistory::normalizePhoneNumber(m_remoteUid, true).length() > 0;
+    default:
+        return false;
     }
-    return false;
 }
 
 void PersonalNotification::setRemoteUid(const QString& remoteUid)
