@@ -700,7 +700,7 @@ void NotificationManager::setNotificationProperties(Notification *notification, 
                                                 MESSAGING_INTERFACE,
                                                 START_CONVERSATION_METHOD,
                                                 QVariantList() << pn->account()
-                                                << pn->targetId()
+                                                << pn->remoteUid()
                                                 << true));
             }
 
