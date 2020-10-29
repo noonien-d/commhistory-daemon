@@ -303,10 +303,9 @@ void NotificationManager::showNotification(const CommHistory::Event& event,
             amendCallNotification(personal, event, text);
 
             if (event.type() == CommHistory::Event::CallEvent) {
+                // avoid popup
                 Notification *notification = personal->notification();
-
-                notification->clearPreviewSummary();
-                notification->clearPreviewBody();
+                notification->setUrgency(Notification::Low);
             }
 
             personal->publishNotification();

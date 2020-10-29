@@ -170,8 +170,8 @@ void PersonalNotification::publishNotification()
     NotificationManager::instance()->setNotificationProperties(m_notification, this, false);
 
     if (collection() == Voice) {
-        m_notification->clearPreviewSummary();
-        m_notification->clearPreviewBody();
+        // avoid popup
+        m_notification->setUrgency(Notification::Low);
     }
 
     m_notification->publish();
