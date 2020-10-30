@@ -57,18 +57,12 @@ class PersonalNotification : public QObject, public Serialisable
     Q_PROPERTY(uint chatType READ chatType WRITE setChatType)
 
     Q_PROPERTY(uint contactid READ contactId)
-    Q_PROPERTY(QString notificationtext READ notificationText
-                                        WRITE setNotificationText)
-    Q_PROPERTY(bool haspendingevents READ hasPendingEvents
-                                     WRITE setHasPendingEvents)
-    Q_PROPERTY(QString chatName READ chatName
-                                WRITE setChatName)
-    Q_PROPERTY(QString eventToken READ eventToken
-                                  WRITE setEventToken)
-    Q_PROPERTY(QString smsReplaceNumber READ smsReplaceNumber
-                                        WRITE setSmsReplaceNumber)
-    Q_PROPERTY(bool hidden READ hidden
-                           WRITE setHidden)
+    Q_PROPERTY(QString notificationtext READ notificationText WRITE setNotificationText)
+    Q_PROPERTY(bool haspendingevents READ hasPendingEvents WRITE setHasPendingEvents)
+    Q_PROPERTY(QString chatName READ chatName WRITE setChatName)
+    Q_PROPERTY(QString eventToken READ eventToken WRITE setEventToken)
+    Q_PROPERTY(QString smsReplaceNumber READ smsReplaceNumber WRITE setSmsReplaceNumber)
+    Q_PROPERTY(bool hidden READ hidden WRITE setHidden)
 
 public:
     enum EventCollection { Messaging = 0, Voicemail, Voice };
