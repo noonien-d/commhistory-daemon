@@ -35,8 +35,8 @@
 #define ACCOUNT_PRESENCE_OBJECT_PATH     QLatin1String("/org/nemomobile/AccountPresence")
 #define ACCOUNT_PRESENCE_INTERFACE       QLatin1String("org.nemomobile.AccountPresenceIf")
 
-#define MESSAGING_SERVICE_NAME    QLatin1String("org.nemomobile.qmlmessages")
-#define MESSAGING_INTERFACE       QLatin1String("org.nemomobile.qmlmessages")
+#define MESSAGING_SERVICE_NAME    QLatin1String("org.sailfishos.Messages")
+#define MESSAGING_INTERFACE       QLatin1String("org.sailfishos.Messages")
 #define SHOW_INBOX_METHOD         QLatin1String("showGroupsWindow")
 #define START_CONVERSATION_METHOD QLatin1String("startConversation")
 
