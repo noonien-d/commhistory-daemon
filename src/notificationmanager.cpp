@@ -356,9 +356,9 @@ void NotificationManager::playClass0SMSAlert()
 
 void NotificationManager::requestClass0Notification(const CommHistory::Event &event)
 {
-    QDBusMessage msg = QDBusMessage::createMethodCall(QLatin1String("org.nemomobile.ClassZeroSmsNotification"),
-                                                      QLatin1String("/org/nemomobile/ClassZeroSmsNotification"),
-                                                      QLatin1String("org.nemomobile.ClassZeroSmsNotification"),
+    QDBusMessage msg = QDBusMessage::createMethodCall(QLatin1String("org.sailfishos.Messages.ClassZeroSmsNotification"),
+                                                      QLatin1String("/org/sailfishos/messages/ClassZeroSmsNotification"),
+                                                      QLatin1String("org.sailfishos.Messages.ClassZeroSmsNotification"),
                                                       QLatin1String("showNotification"));
     QList<QVariant> arguments;
     arguments << event.freeText();
