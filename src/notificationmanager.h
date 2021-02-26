@@ -88,6 +88,11 @@ public:
     void removeNotificationTypes(const QList<int> &types);
 
     /*!
+     * \brief removes notification by event token
+     */
+    void removeNotificationToken(const QString &token);
+
+    /*!
      * \brief return group model with all conversations
      * \returns group model pointer
      */
@@ -145,7 +150,6 @@ private:
 
     void resolveNotification(PersonalNotification *notification);
     void addNotification(PersonalNotification *notification);
-
     void removeConversationNotifications(const CommHistory::Recipient &recipient,
                                          CommHistory::Group::ChatType chatType);
 

@@ -59,6 +59,10 @@ void NotificationManager::requestClass0Notification(const CommHistory::Event &)
 {
 }
 
+void NotificationManager::removeNotificationToken(const QString &token)
+{
+}
+
 CommHistory::GroupModel* NotificationManager::groupModel()
 {
     return m_GroupModel;

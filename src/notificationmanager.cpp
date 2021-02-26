@@ -491,6 +491,16 @@ QString NotificationManager::filteredInboxAccountPath()
     return CommHistoryService::instance()->inboxFilterAccount();
 }
 
+void NotificationManager::removeNotificationToken(const QString &token)
+{
+    auto eraseFrom = std::find_if(m_notifications.begin(), m_notifications.end(), [&](PersonalNotification *notification) {
+            return ((notification->collection() == PersonalNotification::Messaging)
+                    && (notification->eventToken() == token));
+    });
+
+    deleteNotifications(&m_notifications, eraseFrom);
+}
+
 void NotificationManager::removeNotificationTypes(const QList<int> &types)
 {
     DEBUG() << Q_FUNC_INFO << types;
