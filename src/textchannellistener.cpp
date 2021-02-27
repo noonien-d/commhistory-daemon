@@ -995,6 +995,14 @@ TextChannelListener::DeliveryHandlingStatus TextChannelListener::handleDeliveryR
     int deliveryStatus = status.value<int>();
     DEBUG() << "[DELIVERY] Message delivery status: " << deliveryStatus;
 
+
+    if ((deliveryStatus == Tp::DeliveryStatusRead)
+        && (event.direction() == CommHistory::Event::Inbound)) {
+
+        NotificationManager::instance()->removeNotificationToken(deliveryToken);
+        return DeliveryHandlingResolved;
+    }
+
     switch (deliveryStatus) {
     case Tp::DeliveryStatusDelivered: {
         event.setStatus(CommHistory::Event::DeliveredStatus);
@@ -1023,14 +1031,14 @@ TextChannelListener::DeliveryHandlingStatus TextChannelListener::handleDeliveryR
         break;
     }
     case Tp::DeliveryStatusRead: {
-        event.setStatus(CommHistory::Event::DeliveredStatus); // Message is read by recipient so it defenetelly delivered
+        event.setStatus(CommHistory::Event::DeliveredStatus); // Message is read by recipient so it definitively delivered
         event.setStartTime(deliveryTime);
         event.setReadStatus(CommHistory::Event::ReadStatusRead);
 
         break;
     }
     case Tp::DeliveryStatusDeleted: {
-        event.setStatus(CommHistory::Event::DeliveredStatus); // Message is read by recipient so it defenetelly delivered
+        event.setStatus(CommHistory::Event::DeliveredStatus); // Message is read by recipient so it definitively delivered
         event.setStartTime(deliveryTime);
         event.setReadStatus(CommHistory::Event::ReadStatusDeleted);
 
