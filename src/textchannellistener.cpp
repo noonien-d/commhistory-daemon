@@ -999,7 +999,7 @@ TextChannelListener::DeliveryHandlingStatus TextChannelListener::handleDeliveryR
     if ((deliveryStatus == Tp::DeliveryStatusRead)
         && (event.direction() == CommHistory::Event::Inbound)) {
 
-        NotificationManager::instance()->removeNotificationToken(deliveryToken);
+        NotificationManager::instance()->removeConversationNotifications(event.recipients().value(0));
         return DeliveryHandlingResolved;
     }
 
